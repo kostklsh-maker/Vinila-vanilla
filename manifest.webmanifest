@@ -1,0 +1,14 @@
+{
+  "name": "Винила-ванила",
+  "short_name": "Винила-ванила",
+  "description": "Цифровая полка вашей коллекции винила",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#17110d",
+  "theme_color": "#17110d",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
