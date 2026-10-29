@@ -307,6 +307,30 @@ img{-webkit-user-drag:none}
 .manual input{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font:inherit;font-size:16px;outline:none}
 .manual input:focus{border-color:var(--accent)}
 .shelf-row>.empty{width:100%;padding:30px 10px}
+/* профиль: окна-шторки, цены, резервная копия */
+.sh-t{font-family:var(--hfont);font-size:22px}
+.sheet input.f{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font:inherit;font-size:16px;outline:none}
+.sheet input.f:focus{border-color:var(--accent)}
+.lbl-f{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
+.lbl-f span{opacity:.7}
+.btn:disabled{opacity:.5}
+.price{display:flex;gap:8px;margin-bottom:16px}
+.price>div{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;cursor:pointer}
+.price>div:active{background:var(--panel2)}
+.price small{display:block;font-size:11px;color:var(--muted);margin-bottom:2px}
+.price b{font-size:15px}
+.price i{font-style:normal;font-size:11px;font-weight:400;color:var(--muted)}
+.stats.two{grid-template-columns:1fr 1fr;padding:0;margin:12px 0}
+.stats.two .stat b{font-size:20px}
+.shprev{min-height:140px;display:grid;place-items:center}
+.shprev img{width:100%;border-radius:14px;display:block;box-shadow:0 6px 20px var(--shadow)}
+.howto{list-style:none;font-size:13px;line-height:1.5}
+.howto li{padding:8px 0;border-bottom:1px solid var(--line)}
+details.adv{border-bottom:1px solid var(--line)}
+details.adv summary{padding:14px 0;font-size:14px;color:var(--muted);cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::after{content:'▾'}
+details.adv[open] summary::after{content:'▴'}
 /* Телефон и установленное приложение: на весь экран, как обычное приложение (без макета-рамки) */
 @media (max-width:820px),(pointer:coarse),(display-mode:standalone){
   /* пальцами можно листать, но не масштабировать — как в обычном приложении */
@@ -341,7 +365,7 @@ img{-webkit-user-drag:none}
       <li><b>＋</b> — фото пластинки или поиск. <b>Работает по-настоящему</b>: ищет в MusicBrainz, обложки из Cover Art Archive</li>
       <li><b>Карточка</b> — трек-лист по сторонам A/B, биография из Википедии (живой запрос), ссылки</li>
       <li><b>Проигрыватель</b> — вертушка с тонармом; полные треки играют во встроенном плеере</li>
-      <li><b>Профиль</b> — заготовка под регистрацию и синхронизацию</li>
+      <li><b>Профиль</b> — имя и фото, стоимость коллекции, резервная копия, экспорт в таблицу, картинка полки</li>
     </ul>
   </div>
 
@@ -430,18 +454,20 @@ img{-webkit-user-drag:none}
       <section class="view" id="v-prof">
         <div class="top"><div class="hdr"><div><small>Аккаунт</small><h2>Профиль</h2></div></div></div>
         <div class="prof">
-          <div class="pcard"><div class="avatar">К</div><div><b>Константин</b><br><small style="color:var(--muted)">Коллекционер с 2026 · <span id="p-c"></span> пластинок</small></div></div>
+          <div class="pcard" id="pcard" style="cursor:pointer"><div class="avatar" id="pAva">К</div><div style="flex:1;min-width:0"><b id="pName">Константин</b><br><small style="color:var(--muted)" id="pSince"></small></div><span style="color:var(--muted)">✎</span></div>
           <div class="row" style="align-items:center">Оформление<div class="theme-sw"><button data-theme-set="strict">◼ Строгий</button><button data-theme-set="vanilla">🍦 Ванильный</button></div></div>
-          <div class="row" style="flex-direction:column;gap:8px">Резервный ключ YouTube (необязательно)
-            <div style="display:flex;gap:8px"><input id="ytKey" placeholder="Ключ YouTube Data API v3" style="flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 12px;color:var(--ink);font:inherit;font-size:13px;outline:none"><button class="btn pri" style="flex:none" id="ytSave">Сохранить</button></div>
-            <span style="font-size:11px">Бесплатно: console.cloud.google.com → включить YouTube Data API v3 → «Учётные данные» → ключ API</span></div>
           <div class="row" id="installRow" style="cursor:pointer">Установить на телефон<span>📲</span></div>
-          <div class="row">Синхронизация с облаком<span>вкл.</span></div>
-          <div class="row">Экспорт коллекции (CSV / Discogs)<span>›</span></div>
-          <div class="row">Публичная полка (ссылка друзьям)<span>скоро</span></div>
           <div class="row" id="wishRow" style="cursor:pointer">Список желаний<span id="wishC">0</span></div>
-          <div class="row">Оценка стоимости коллекции<span>скоро</span></div>
-          <div class="row">О проекте «Винила-ванила»<span>›</span></div>
+          <div class="row" id="valueRow" style="cursor:pointer">Стоимость коллекции<span id="valueC">›</span></div>
+          <div class="row" id="backupRow" style="cursor:pointer">Резервная копия<span id="backupC">›</span></div>
+          <div class="row" id="csvRow" style="cursor:pointer">Экспорт в таблицу (CSV)<span>›</span></div>
+          <div class="row" id="shareRow" style="cursor:pointer">Поделиться полкой (картинка)<span>›</span></div>
+          <div class="row" id="aboutRow" style="cursor:pointer">О проекте «Винила-ванила»<span>›</span></div>
+          <details class="adv" id="adv"><summary>Дополнительно</summary>
+            <div style="padding:0 0 14px;display:flex;flex-direction:column;gap:8px;font-size:14px">Резервный ключ YouTube (необязательно)
+              <div style="display:flex;gap:8px"><input id="ytKey" placeholder="Ключ YouTube Data API v3" style="flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 12px;color:var(--ink);font:inherit;font-size:13px;outline:none"><button class="btn pri" style="flex:none" id="ytSave">Сохранить</button></div>
+              <span style="font-size:11px;color:var(--muted)">Не нужен: треки и так ищутся бесплатно. Пригодится, только если бесплатный поиск перестанет находить песни. Ключ: console.cloud.google.com → включить YouTube Data API v3 → «Учётные данные» → ключ API</span></div>
+          </details>
           <p class="note" style="margin:18px 0 0">Винила-ванила — чтобы винил жил дольше: цифровая память о каждой пластинке на вашей полке.</p>
         </div>
       </section>
@@ -527,7 +553,7 @@ function renderShelf(){
   $('#s-count').textContent=own.length;
   $('#s-art').textContent=new Set(own.map(r=>r.artist)).size;
   $('#s-hours').textContent=(own.reduce((s,r)=>s+tracks(r).reduce((a,t)=>a+secs(t.d),0),0)/3600).toFixed(1);
-  $('#p-c').textContent=own.length;$('#wishC').textContent=wish.length;
+  renderProfile();
   renderSearch();
 }
 
@@ -605,6 +631,7 @@ async function openRecord(id,mode='push',opt={}){
   <div class="dt"><h3>${r.title}</h3><div class="art">${r.artist}</div>
   <div class="meta"><span>${r.year||'—'}</span><span>${r.genre}</span>${r.label?`<span>${r.label}</span>`:''}${tracks(r).length?`<span>${tracks(r).length} треков</span>`:''}<span>${sides(r).length>2?'2LP':'LP'}</span>${r.wish?'<span>♡ хочу купить</span>':''}${r.tag?`<span>🏷 метка ${Object.keys(r.tag).join(' + ').toUpperCase()}</span>`:''}</div>
   ${r.wish?'<div class="banner" style="margin:0 0 14px"><span style="flex:1">♡ В списке желаний</span><button class="btn pri" id="gotIt">Купил ✓</button></div>':''}
+  <div class="price"><div id="paidBox"><small>${r.wish?'Цена в магазине':'Заплатил'}</small><b>${r.paid?money(r.paid.v,r.paid.cur):'<i>указать ✎</i>'}</b></div><div id="mktBox"><small>На рынке · Discogs</small><b id="mktV">${mktHTML(r)}</b></div></div>
   <div class="btns"><button class="btn pri" id="playall">▶ Поставить на вертушку</button><button class="btn" style="flex:none;width:52px" id="tagBtn" title="Метка на конверт">🏷</button><button class="btn" style="flex:none;width:52px;font-size:18px" id="moreBtn" aria-label="Ещё">⋯</button></div>
   ${r.photo?`<div class="myphoto"><img src="${r.photo}" alt=""><div><b style="color:var(--ink)">Моё фото конверта</b><br>сделано при добавлении на полку</div></div>`:''}
   <div class="tabs2"><button class="on" data-t="tl">Трек-лист</button><button data-t="bio">О группе</button><button data-t="links">Ссылки</button></div>
@@ -635,6 +662,10 @@ async function openRecord(id,mode='push',opt={}){
   $('#tagBtn').onclick=()=>openTagSheet(r);
   $('#moreBtn').onclick=()=>openActions(r.id);
   if(r.wish)$('#gotIt').onclick=()=>{setWish(r,false);openRecord(r.id,'none',{anim:false,keep:true,quiet:true})};
+  $('#paidBox').onclick=()=>openPrice(r);
+  $('#mktBox').onclick=()=>r.mkt?.none&&!r.est?openPrice(r):fetchMarket(r);
+  // рыночную цену ищем сами при первом открытии карточки
+  if(r.mkt===undefined&&!mktState.has(r.id))fetchMarket(r);
   setTab('tl');
   show('detail',{anim:opt.anim===undefined?'a-push':opt.anim,keep:opt.keep});
 }
@@ -771,14 +802,16 @@ async function mbSearch(q){
 async function mbAdd(id,el){
   el.style.opacity=.5;
   try{
-    const d=await (await fetch(`https://musicbrainz.org/ws/2/release/${id}?inc=recordings+artist-credits+labels+release-groups+genres&fmt=json`)).json();
+    const d=await (await fetch(`https://musicbrainz.org/ws/2/release/${id}?inc=recordings+artist-credits+labels+release-groups+genres+url-rels&fmt=json`)).json();
     const media=d.media||[];const letters='ABCDEFGH';const rec={id:Date.now(),title:d.title,artist:(d['artist-credit']||[]).map(a=>a.name).join(', '),year:(d.date||'').slice(0,4),
       genre:(d.genres&&d.genres[0]?.name)||(d['release-group']?.genres?.[0]?.name)||'Новое',label:d['label-info']?.[0]?.label?.name,wiki:(d['artist-credit']||[])[0]?.name,
       c:['#444','#222'],lbl:'#e0a458',img:`https://coverartarchive.org/release/${id}/front-500`};
     rec.genre=rec.genre.charAt(0).toUpperCase()+rec.genre.slice(1);
     media.forEach((m,mi)=>{rec[letters[mi]]=(m.tracks||[]).map(t=>({t:t.title,d:t.length?fmt(t.length/1000):''}))});
     if(!media.length) rec.A=[{t:'(трек-лист не указан)',d:''}];
-    // если сторон > 4 — оставим 4 для макета
+    // номер издания в MusicBrainz и, если есть, на Discogs — по нему ищется рыночная цена
+    rec.mbid=id;
+    const dm=((d.relations||[]).find(x=>x.type==='discogs')?.url?.resource||'').match(/release\/(\d+)/);if(dm)rec.dg=+dm[1];
     if(pendingPhoto)rec.photo=pendingPhoto;
     addRecord(rec);
   }catch(e){el.style.opacity=1;toast('Ошибка загрузки')}
@@ -830,7 +863,7 @@ $('#mpp').onclick=e=>{e.stopPropagation();toggle()};
 $('#mini').onclick=()=>go('player');
 $('#bar').onclick=e=>{if(!current)return;const b=e.currentTarget.getBoundingClientRect();seek(Math.floor((e.clientX-b.left)/b.width*dur))};
 $('#ytKey').value=getKey();
-$('#ytSetup').onclick=()=>{goTab('prof');$('#ytKey').focus()};
+$('#ytSetup').onclick=()=>{goTab('prof');$('#adv').open=true;$('#ytKey').focus()};
 $('#ytSave').onclick=()=>{try{localStorage.setItem('vv-ytkey',$('#ytKey').value.trim())}catch(e){}toast($('#ytKey').value.trim()?'Ключ сохранён — полные треки включены':'Ключ удалён')};
 // фото с камеры или из галереи прикрепляется к пластинке, которую добавите следом
 const onPhoto=e=>{
@@ -862,7 +895,26 @@ const OWN_HOST=/^https?:$/.test(location.protocol)&&!/claude/.test(location.host
 const APP_URL=OWN_HOST?location.origin+location.pathname:'https://claude.ai/artifact/VzAQBnxmVtMak6uHGva26j';
 const recUrl=r=>APP_URL+'#r='+code(r);
 let pendingPhoto=null;
-function save(){try{localStorage.setItem('vv-records',JSON.stringify(records))}catch(e){toast('Не хватает места для сохранения')}}
+// коллекция хранится в IndexedDB: туда помещаются сотни фото конвертов (localStorage — всего ~5 МБ)
+const DB={db:null,
+  open(){return new Promise((res,rej)=>{const q=indexedDB.open('vinila-vanila',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>res(this.db=q.result);q.onerror=()=>rej(q.error)})},
+  get(k){return new Promise((res,rej)=>{const q=this.db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
+  set(k,v){return new Promise((res,rej)=>{const tx=this.db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}};
+function saveLS(){try{localStorage.setItem('vv-records',JSON.stringify(records))}catch(e){toast('Не хватает места для сохранения')}}
+function save(){
+  if(!DB.db)return saveLS();
+  DB.set('records',records).then(()=>{try{localStorage.removeItem('vv-records')}catch(e){}}).catch(saveLS);
+}
+async function loadRecords(){
+  let s=null;
+  try{await DB.open();s=await DB.get('records')}catch(e){DB.db=null}
+  if(!Array.isArray(s)){
+    // первый запуск новой версии: переносим коллекцию из localStorage
+    try{const l=JSON.parse(localStorage.getItem('vv-records'));if(Array.isArray(l)){s=l;records=l;save()}}catch(e){}
+  }
+  if(Array.isArray(s))records=s; // пустая полка тоже сохраняется — примеры не возвращаются
+  try{navigator.storage?.persist?.()}catch(e){}
+}
 // уменьшаем своё фото конверта до ~420px, чтобы хранить его в коллекции
 function shrink(img){return new Promise(res=>{const go=()=>{const k=Math.min(1,420/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=img.naturalWidth*k;c.height=img.naturalHeight*k;c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.75))};img.complete?go():img.onload=go})}
 function markTag(r,kind){r.tag={...(r.tag||{}),[kind]:new Date().toLocaleDateString('ru')};save();renderShelf()}
@@ -935,6 +987,7 @@ function openActions(id){
     ${inCard?'':'<button data-a="open"><i>💿</i>Открыть карточку</button>'}
     <button data-a="wish"><i>${r.wish?'✓':'♡'}</i>${r.wish?'Купил — перенести в коллекцию':'Перенести в список желаний'}</button>
     <button data-a="cover"><i>🖼</i>Сменить обложку (из галереи)</button>
+    <button data-a="price"><i>💶</i>${r.wish?'Цена в магазине':'Цена покупки и оценка'}</button>
     ${r.wish?'':'<button data-a="tag"><i>🏷</i>Метка NFC / QR</button>'}
     <button data-a="del" class="danger"><i>🗑</i>${r.wish?'Удалить из списка желаний':'Удалить из коллекции'}</button>
   </div>
@@ -946,6 +999,7 @@ function openActions(id){
     if(a==='wish'){setWish(r,!r.wish);closeTagSheet()}
     if(a==='cover'){coverInput.click();closeTagSheet()}
     if(a==='tag')openTagSheet(r);
+    if(a==='price')openPrice(r);
     if(a==='del'){
       // удаление — в два нажатия, чтобы не стереть пластинку случайно
       if(!b.classList.contains('sure')){b.classList.add('sure');b.innerHTML='<i>🗑</i>Точно удалить? Нажмите ещё раз';return}
@@ -977,6 +1031,338 @@ document.addEventListener('contextmenu',e=>{
 });
 document.addEventListener('dragstart',e=>e.preventDefault());
 
+/* ---------- профиль ---------- */
+const VERSION='2026.10.29';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const plural=(n,a,b,c)=>{const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c};
+const CUR={EUR:'€',USD:'$',RUB:'₽',ILS:'₪',GBP:'£'};
+const money=(v,c)=>Number(v).toLocaleString('ru',{maximumFractionDigits:2})+'\u00a0'+(CUR[c]||c||'');
+let profile={name:'Константин',cur:'EUR'};
+try{Object.assign(profile,JSON.parse(localStorage.getItem('vv-profile'))||{})}catch(e){}
+function saveProfile(){try{localStorage.setItem('vv-profile',JSON.stringify(profile))}catch(e){}renderProfile()}
+const lastBackup=()=>{try{return +localStorage.getItem('vv-lastbackup')||0}catch(e){return 0}};
+function paintAvatar(el,name,ava){el.textContent=ava?'':(name.trim().charAt(0)||'♪').toUpperCase();el.style.background=ava?`center/cover url("${ava}")`:''}
+function renderProfile(){
+  const own=records.filter(r=>!r.wish),name=profile.name||'Коллекционер';
+  paintAvatar($('#pAva'),name,profile.ava);paintAvatar($('#avatarBtn'),name,profile.ava);
+  $('#pName').textContent=name;
+  // «коллекционер с» — дата первой добавленной пластинки (номер пластинки — время добавления)
+  const ts=records.map(r=>+r.id).filter(t=>t>1e12),first=ts.length?Math.min(...ts):Date.now();
+  if(!profile.since||first<profile.since){profile.since=first;try{localStorage.setItem('vv-profile',JSON.stringify(profile))}catch(e){}}
+  const since=new Date(profile.since).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'}).replace(/\s*г\.?$/,'');
+  $('#pSince').textContent=`Коллекционер с ${since} · ${own.length} ${plural(own.length,'пластинка','пластинки','пластинок')}`;
+  $('#wishC').textContent=records.length-own.length;
+  const mk=sums(own,mktOf);$('#valueC').textContent=Object.keys(mk).length?'≈ '+sumText(mk):'›';
+  const lb=lastBackup();$('#backupC').textContent=lb?new Date(lb).toLocaleDateString('ru',{day:'numeric',month:'short'}):'не делали';
+}
+// шторка поверх текущего экрана; «Назад» на телефоне закрывает её
+function openSheet(html){
+  if(!$('#tagBg').classList.contains('on'))nav(curView==='detail'?{v:'detail',id:curId,sheet:1}:{v:curView,sheet:1},'push');
+  const sh=$('#tagSheet');sh.innerHTML=html;sh.scrollTop=0;$('#tagBg').classList.add('on');
+  sh.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeTagSheet);
+}
+const closeBtn=(t='Закрыть')=>`<button class="btn" style="width:100%;margin-top:14px" data-close>${t}</button>`;
+function squareCrop(img,size){return new Promise(res=>{const go=()=>{const s=Math.min(img.naturalWidth,img.naturalHeight),c=document.createElement('canvas');c.width=c.height=size;c.getContext('2d').drawImage(img,(img.naturalWidth-s)/2,(img.naturalHeight-s)/2,s,s,0,0,size,size);res(c.toDataURL('image/jpeg',.82))};img.complete&&img.naturalWidth?go():img.onload=go})}
+const avaInput=Object.assign(document.createElement('input'),{type:'file',accept:'image/*'});
+function openProfileSheet(){
+  let ava=profile.ava||'';
+  openSheet(`<div class="grab"></div><h3 class="sh-t">Профиль</h3>
+  <div style="display:flex;gap:14px;align-items:center;margin:14px 0">
+    <div class="avatar" id="eAva" style="width:76px;height:76px;font-size:28px;flex:none"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;flex:1"><button class="btn" id="eAvaPick">🖼 Фото из галереи</button><button class="btn" id="eAvaDel">Убрать фото</button></div>
+  </div>
+  <label class="lbl-f" for="eName">Имя</label><input class="f" id="eName" maxlength="40" autocomplete="off" placeholder="Как вас зовут" value="${esc(profile.name||'')}">
+  <div class="btns" style="margin:16px 0 0"><button class="btn" data-close>Отмена</button><button class="btn pri" id="eSave">Сохранить</button></div>`);
+  const paint=()=>{paintAvatar($('#eAva'),$('#eName').value||profile.name||'',ava);$('#eAvaDel').hidden=!ava};
+  paint();$('#eName').oninput=paint;
+  $('#eAvaPick').onclick=()=>avaInput.click();
+  avaInput.onchange=()=>{const f=avaInput.files[0];avaInput.value='';if(!f)return;const img=new Image();img.src=URL.createObjectURL(f);squareCrop(img,240).then(d=>{ava=d;if($('#eAva'))paint()})};
+  $('#eAvaDel').onclick=()=>{ava='';paint()};
+  $('#eSave').onclick=()=>{profile.name=$('#eName').value.replace(/[<>"`]/g,'').trim()||profile.name;profile.ava=ava||undefined;saveProfile();closeTagSheet();toast('Профиль сохранён ✓')};
+}
+
+/* ---------- цены: сколько заплатил и рыночная цена с Discogs ---------- */
+const DG_CUR=['EUR','USD','GBP']; // в рублях и шекелях Discogs цены не отдаёт — тогда показываем в евро
+const mktCur=()=>DG_CUR.includes(profile.cur)?profile.cur:'EUR';
+const mktOf=r=>r.mkt&&r.mkt.v!=null?r.mkt:(r.est||null);
+function sums(list,get){const m={};list.forEach(r=>{const p=get(r);if(p&&isFinite(p.v))m[p.cur]=(m[p.cur]||0)+Number(p.v)});return m}
+const sumText=m=>Object.entries(m).map(([c,v])=>money(Math.round(v),c)).join(' + ')||'—';
+// открытые базы просят не чаще 1 запроса в секунду (MusicBrainz) и 25 в минуту (Discogs без ключа)
+function queued(gap){let chain=Promise.resolve();return url=>{const p=chain.then(()=>fetch(url).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}));chain=p.catch(()=>{}).then(()=>new Promise(r=>setTimeout(r,gap)));return p}}
+const mbJSON=queued(1100),dgJSON=queued(2500);
+const MB='https://musicbrainz.org/ws/2/';
+// номер издания на Discogs: из ссылки в MusicBrainz, иначе — основное издание альбома (master)
+async function discogsId(r){
+  if(r.dg)return r.dg;
+  let rg=null;
+  if(r.mbid){
+    const d=await mbJSON(`${MB}release/${r.mbid}?inc=url-rels+release-groups&fmt=json`);
+    const m=((d.relations||[]).find(x=>x.type==='discogs')?.url?.resource||'').match(/release\/(\d+)/);
+    if(m)return r.dg=+m[1];
+    rg=d['release-group']?.id;
+  }
+  if(!rg){
+    const q=s=>String(s).replace(/["\\]/g,' ');
+    const d=await mbJSON(`${MB}release-group/?query=${encodeURIComponent(`releasegroup:"${q(r.title)}" AND artist:"${q(r.artist)}"`)}&limit=3&fmt=json`);
+    const g=(d['release-groups']||[]).find(x=>x.score>=90);if(!g)return null;rg=g.id;
+  }
+  const g=await mbJSON(`${MB}release-group/${rg}?inc=url-rels&fmt=json`);
+  const mm=((g.relations||[]).find(x=>x.type==='discogs')?.url?.resource||'').match(/master\/(\d+)/);
+  if(!mm)return null;
+  const ms=await dgJSON(`https://api.discogs.com/masters/${mm[1]}`);
+  return r.dg=ms.main_release||null;
+}
+const mktState=new Map(); // id → 'busy' | 'err' (только на время работы приложения)
+function mktHTML(r){
+  const st=mktState.get(r.id);
+  if(st==='busy')return '<i>ищу цену…</i>';
+  if(st==='err')return '<i>нет связи · повторить</i>';
+  if(r.mkt&&r.mkt.v!=null)return `от ${money(r.mkt.v,r.mkt.cur)}<i> · ${r.mkt.n} в продаже</i>`;
+  if(r.est)return `≈ ${money(r.est.v,r.est.cur)}<i> · ваша оценка</i>`;
+  if(r.mkt?.none)return '<i>нет на Discogs · оценить ✎</i>';
+  if(r.mkt)return '<i>сейчас не продают</i>';
+  return '<i>—</i>';
+}
+function updateMktUI(r){if(curView==='detail'&&curId==r.id&&$('#mktV'))$('#mktV').innerHTML=mktHTML(r)}
+async function fetchMarket(r){
+  if(mktState.get(r.id)==='busy')return;
+  mktState.set(r.id,'busy');updateMktUI(r);
+  try{
+    const id=await discogsId(r);
+    if(!id)r.mkt={none:1,t:Date.now()};
+    else{
+      const s=await dgJSON(`https://api.discogs.com/marketplace/stats/${id}?curr_abbr=${mktCur()}`);
+      r.mkt={v:s.lowest_price?s.lowest_price.value:null,cur:s.lowest_price?.currency||mktCur(),n:s.num_for_sale||0,t:Date.now()};
+    }
+    mktState.delete(r.id);save();
+  }catch(e){mktState.set(r.id,'err')}
+  updateMktUI(r);renderProfile();
+}
+const parseMoney=s=>{s=String(s).replace(/\s/g,'').replace(',','.');if(!s)return null;const v=parseFloat(s);return isFinite(v)&&v>=0?Math.round(v*100)/100:NaN};
+function openPrice(r){
+  sheetRec=r;
+  let cur=r.paid?.cur||r.est?.cur||profile.cur||'EUR';
+  const val=p=>p?String(p.v).replace('.',','):'';
+  openSheet(`<div class="grab"></div>
+  <div class="act-h"><div class="th">${coverHTML(r)}</div><div><b>${esc(r.title)}</b><small>${esc(r.artist)}${r.year?' · '+esc(r.year):''}</small></div></div>
+  <label class="lbl-f" for="pPaid">${r.wish?'Цена в магазине':'Сколько заплатил'}</label>
+  <input class="f" id="pPaid" inputmode="decimal" autocomplete="off" placeholder="например, 2500" value="${val(r.paid)}">
+  <label class="lbl-f" for="pEst">Своя оценка стоимости <span>— если Discogs не нашёл издание</span></label>
+  <input class="f" id="pEst" inputmode="decimal" autocomplete="off" placeholder="необязательно" value="${val(r.est)}">
+  <div class="lbl-f">Валюта</div>
+  <div class="seg" id="pCur" style="margin:0">${Object.entries(CUR).map(([k,s])=>`<button data-c="${k}" class="${k===cur?'on':''}">${s}</button>`).join('')}</div>
+  <div class="btns" style="margin:16px 0 0"><button class="btn" data-close>Отмена</button><button class="btn pri" id="pSave">Сохранить</button></div>`);
+  $('#pCur').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;cur=b.dataset.c;$('#pCur').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))};
+  $('#pSave').onclick=()=>{
+    const p=parseMoney($('#pPaid').value),s=parseMoney($('#pEst').value);
+    if(Number.isNaN(p)||Number.isNaN(s)){toast('Цена — это число, например 2500');return}
+    if(p==null)delete r.paid;else r.paid={v:p,cur};
+    if(s==null)delete r.est;else r.est={v:s,cur};
+    profile.cur=cur;saveProfile();save();renderShelf();closeTagSheet();toast('Цена сохранена ✓');
+  };
+}
+let valJob=null;
+function valueHTML(){
+  const own=records.filter(r=>!r.wish);
+  const paid=sums(own,r=>r.paid),mk=sums(own,mktOf);
+  const nPaid=own.filter(r=>r.paid).length,nMk=own.filter(mktOf).length;
+  const top=own.filter(mktOf).sort((a,b)=>mktOf(b).v-mktOf(a).v).slice(0,10);
+  return `<div class="grab"></div><h3 class="sh-t" id="valBody">Стоимость коллекции</h3>
+  <div class="stats two"><div class="stat"><b>${sumText(paid)}</b><span>вложено · указано у ${nPaid} из ${own.length}</span></div><div class="stat"><b>${Object.keys(mk).length?'≈ '+sumText(mk):'—'}</b><span>на рынке · известно у ${nMk} из ${own.length}</span></div></div>
+  <button class="btn pri" style="width:100%" id="valRun" ${valJob?'disabled':''}>${valJob?`Проверяю ${valJob.i} из ${valJob.n}: ${esc(valJob.t)}…`:'🔄 Оценить коллекцию по Discogs'}</button>
+  <div class="lbl-f">Валюта</div>
+  <div class="seg" id="valCur" style="margin:0">${Object.entries(CUR).map(([k,s])=>`<button data-c="${k}" class="${k===profile.cur?'on':''}">${s}</button>`).join('')}</div>
+  ${top.length?'<div class="side-lbl" style="margin-top:16px">САМЫЕ ЦЕННЫЕ</div>'+top.map(r=>`<div class="ritem" data-vopen="${r.id}"><div class="th">${coverHTML(r)}</div><div><b>${esc(r.title)}</b><small>${esc(r.artist)}${r.paid?' · заплатил '+money(r.paid.v,r.paid.cur):''}</small></div><span class="plus" style="font-size:14px;white-space:nowrap">${money(mktOf(r).v,mktOf(r).cur)}</span></div>`).join(''):''}
+  <p class="note" style="margin:12px 0 0">Рыночная цена — самое дешёвое предложение на Discogs для вашего издания (или основного издания альбома). Сколько заплатили и свою оценку можно вписать в карточке пластинки. ${profile.cur==='RUB'||profile.cur==='ILS'?'В рублях и шекелях Discogs цены не показывает — рыночные цены будут в евро.':''}</p>
+  ${closeBtn()}`;
+}
+function bindValue(){
+  $('#valRun').onclick=runValuation;
+  $('#valCur').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;profile.cur=b.dataset.c;saveProfile();refreshValue()};
+  $('#tagSheet').querySelectorAll('[data-vopen]').forEach(x=>x.onclick=()=>{$('#tagBg').classList.remove('on');openRecord(x.dataset.vopen,'replace')});
+}
+function openValue(){openSheet(valueHTML());bindValue()}
+function refreshValue(){if(!$('#valBody'))return;const sh=$('#tagSheet'),y=sh.scrollTop;sh.innerHTML=valueHTML();sh.scrollTop=y;sh.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeTagSheet);bindValue()}
+async function runValuation(){
+  if(valJob)return;
+  const day=864e5,list=records.filter(r=>!r.wish&&(!r.mkt||Date.now()-r.mkt.t>day||(r.mkt.v!=null&&r.mkt.cur!==mktCur())));
+  if(!list.length){toast('Цены свежие — проверяли сегодня ✓');return}
+  valJob={i:0,n:list.length,t:''};
+  for(const r of list){valJob.i++;valJob.t=r.title;refreshValue();await fetchMarket(r)}
+  valJob=null;refreshValue();renderProfile();toast('Оценка готова ✓');
+}
+
+/* ---------- файлы: резервная копия, таблица, картинка полки ---------- */
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),10000)}
+// «Отправить» — меню телефона «Поделиться» (Telegram, Google Диск, почта); «Сохранить» — в папку «Загрузки»
+function fileButtons(box,name,blob,title,onDone){
+  const file=new File([blob],name,{type:blob.type});
+  let share=false;try{share=!!navigator.canShare&&navigator.canShare({files:[file]})}catch(e){}
+  box.innerHTML=(share?'<button class="btn pri" data-f="share">📤 Отправить</button>':'')+`<button class="btn${share?'':' pri'}" data-f="dl">⬇ Сохранить на телефон</button>`;
+  if(share)box.querySelector('[data-f=share]').onclick=async()=>{try{await navigator.share({files:[file],title});onDone&&onDone()}catch(e){if(e.name!=='AbortError'){download(blob,name);onDone&&onDone()}}};
+  box.querySelector('[data-f=dl]').onclick=()=>{download(blob,name);toast('Сохранено в «Загрузки» ✓');onDone&&onDone()};
+}
+const today=()=>new Date().toISOString().slice(0,10);
+// резервная копия — обычный текстовый файл: его можно отправить себе в любой мессенджер
+function openBackup(){
+  const own=records.filter(r=>!r.wish).length,wish=records.length-own,lb=lastBackup();
+  const data=JSON.stringify({app:'vinila-vanila',v:1,date:new Date().toISOString(),records,profile,theme});
+  const blob=new Blob([data],{type:'text/plain'});
+  openSheet(`<div class="grab"></div><h3 class="sh-t">Резервная копия</h3>
+  <p class="hint" style="padding:0;margin:4px 0 10px">Коллекция хранится только на этом телефоне. Если удалить приложение или сменить телефон, она пропадёт. Сохраните копию в файл: отправьте себе в Telegram, на Google Диск или почту. Восстановить можно здесь же.</p>
+  <div class="payload">💿 ${own} в коллекции · ♡ ${wish} в желаниях · ${Math.max(1,Math.round(blob.size/1024))} КБ<br>Последняя копия: ${lb?new Date(lb).toLocaleString('ru',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}):'ещё не делали'}</div>
+  <div class="btns" id="bkBtns" style="margin-bottom:8px"></div>
+  <button class="btn" style="width:100%" id="bkRestore">📂 Восстановить из файла</button>
+  <div id="bkConfirm"></div>
+  ${closeBtn()}`);
+  fileButtons($('#bkBtns'),`vinila-vanila-${today()}.txt`,blob,'Винила-ванила — резервная копия',()=>{try{localStorage.setItem('vv-lastbackup',Date.now())}catch(e){}renderProfile()});
+  $('#bkRestore').onclick=()=>restoreInput.click();
+}
+const restoreInput=Object.assign(document.createElement('input'),{type:'file',accept:'.txt,.json,text/plain,application/json'});
+// всё из файла проверяем: в карточку попадает только текст, цвета и картинки
+const S=s=>s==null||s===''?undefined:String(s).replace(/[<>"`]/g,'').slice(0,300);
+const okImg=u=>typeof u==='string'&&(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u)||/^https:\/\/[^\s"'<>()\\]+$/.test(u))?u:undefined;
+const okColor=c=>typeof c==='string'&&/^#[0-9a-f]{3,8}$/i.test(c)?c:undefined;
+const okMoney=p=>p&&isFinite(p.v)&&CUR[p.cur]?{v:Number(p.v),cur:p.cur}:undefined;
+function cleanRec(x,i){
+  if(!x||typeof x!=='object'||!x.title||!x.artist)return null;
+  const id=Number.isInteger(x.id)&&x.id>0?x.id:Date.now()+i;
+  const r={id,title:S(x.title),artist:S(x.artist),year:S(x.year)||'',genre:S(x.genre)||'Новое',label:S(x.label),wiki:S(x.wiki),lang:x.lang==='ru'?'ru':undefined,
+    c:Array.isArray(x.c)&&okColor(x.c[0])&&okColor(x.c[1])?[x.c[0],x.c[1]]:['#5a4636','#2a1d14'],lbl:okColor(x.lbl)||'#e0a458',
+    art:['prism','blood','chrome','bluenote','type'].includes(x.art)?x.art:undefined,dark:x.dark?1:undefined,
+    img:okImg(x.img),photo:okImg(x.photo),wish:x.wish?true:undefined,
+    mbid:/^[0-9a-f-]{36}$/.test(x.mbid||'')?x.mbid:undefined,dg:Number.isInteger(x.dg)?x.dg:undefined,
+    paid:okMoney(x.paid),est:okMoney(x.est)};
+  if(x.mkt&&typeof x.mkt==='object')r.mkt=x.mkt.none?{none:1,t:+x.mkt.t||0}:{v:isFinite(x.mkt.v)&&x.mkt.v!=null?+x.mkt.v:null,cur:/^[A-Z]{3}$/.test(x.mkt.cur)?x.mkt.cur:'EUR',n:+x.mkt.n||0,t:+x.mkt.t||0};
+  ['A','B','C','D'].forEach(k=>{if(Array.isArray(x[k]))r[k]=x[k].slice(0,80).map(t=>({t:S(t&&t.t)||'',d:/^\d{1,3}:\d{2}$/.test(t&&t.d)?t.d:''}))});
+  if(x.tag&&typeof x.tag==='object'){r.tag={};['nfc','qr'].forEach(k=>{if(x.tag[k])r.tag[k]=S(x.tag[k])});if(!Object.keys(r.tag).length)delete r.tag}
+  Object.keys(r).forEach(k=>r[k]===undefined&&delete r[k]);
+  return r;
+}
+restoreInput.onchange=async()=>{
+  const f=restoreInput.files[0];restoreInput.value='';if(!f)return;
+  let d;try{d=JSON.parse(await f.text())}catch(e){}
+  if(!d||d.app!=='vinila-vanila'||!Array.isArray(d.records)){toast('Это не резервная копия «Винила-ванила»');return}
+  const list=d.records.map(cleanRec).filter(Boolean);
+  const key=r=>(r.artist+'|'+r.title).toLowerCase();
+  const have=new Set(records.map(r=>r.id)),haveK=new Set(records.map(key));
+  const fresh=list.filter(r=>!have.has(r.id)&&!haveK.has(key(r)));
+  if(!$('#bkConfirm'))openBackup();
+  const wish=list.filter(r=>r.wish).length,date=d.date?new Date(d.date).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'}):'';
+  $('#bkConfirm').innerHTML=`<div class="banner" style="margin:12px 0 0;flex-direction:column;align-items:stretch">
+    <span>Копия${date?' от '+esc(date):''}: ${list.length} ${plural(list.length,'пластинка','пластинки','пластинок')}${wish?` (из них ♡ ${wish})`:''}. Новых для этого телефона: ${fresh.length}.</span>
+    <button class="btn pri" id="rsMerge" ${fresh.length?'':'disabled'}>Добавить недостающие (${fresh.length})</button>
+    <button class="btn" id="rsReplace">Заменить всю коллекцию копией</button></div>`;
+  $('#bkConfirm').scrollIntoView({block:'nearest',behavior:'smooth'});
+  $('#rsMerge').onclick=()=>{records.push(...fresh);save();renderShelf();closeTagSheet();toast(`Добавлено: ${fresh.length} ✓`)};
+  $('#rsReplace').onclick=e=>{
+    const b=e.currentTarget;
+    if(!b.classList.contains('sure')){b.classList.add('sure');b.style.cssText='background:#e5484d;color:#fff;border-color:#e5484d';b.textContent='Текущая коллекция сотрётся. Нажмите ещё раз';return}
+    records=list;
+    if(d.profile&&typeof d.profile==='object'){profile.name=S(d.profile.name)||profile.name;profile.ava=okImg(d.profile.ava)?.startsWith('data:')?d.profile.ava:undefined;if(CUR[d.profile.cur])profile.cur=d.profile.cur;saveProfile()}
+    save();if(d.theme==='vanilla'||d.theme==='strict')setTheme(d.theme);else renderShelf();
+    closeTagSheet();toast('Коллекция восстановлена ✓');
+  };
+};
+// таблица для Excel и Google Таблиц: точка с запятой и BOM, чтобы русские буквы открылись правильно
+function collectionCSV(){
+  const num=v=>v==null||!isFinite(v)?'':String(v).replace('.',',');
+  const txt=v=>{v=v==null?'':String(v);if(/^[=+\-@]/.test(v))v="'"+v;return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const head=['Статус','Артист','Альбом','Год','Лейбл','Жанр','Треков','Заплатил','Валюта','Discogs: цена от','Валюта Discogs','Discogs: в продаже','Своя оценка','Валюта оценки','Метка','Добавлено'];
+  const rows=[...records].sort((a,b)=>(a.wish?1:0)-(b.wish?1:0)||a.artist.localeCompare(b.artist)).map(r=>[
+    txt(r.wish?'Хочу купить':'В коллекции'),txt(r.artist),txt(r.title),txt(r.year),txt(r.label),txt(r.genre),tracks(r).length||'',
+    num(r.paid?.v),txt(r.paid?.cur),num(r.mkt?.v),txt(r.mkt?.v!=null?r.mkt.cur:''),r.mkt?.v!=null?r.mkt.n:'',num(r.est?.v),txt(r.est?.cur),
+    txt(r.tag?Object.keys(r.tag).join('+').toUpperCase():''),txt(+r.id>1e12?new Date(+r.id).toLocaleDateString('ru'):'')]);
+  return '\ufeff'+[head.map(txt),...rows].map(r=>r.join(';')).join('\r\n');
+}
+function openCSV(){
+  const blob=new Blob([collectionCSV()],{type:'text/csv'});
+  const own=records.filter(r=>!r.wish).length;
+  openSheet(`<div class="grab"></div><h3 class="sh-t">Экспорт в таблицу</h3>
+  <p class="hint" style="padding:0;margin:4px 0 10px">Вся коллекция и список желаний одной таблицей: артист, альбом, год, лейбл, жанр, цены, метки. Файл открывается в Excel и Google Таблицах.</p>
+  <div class="payload">📄 vinila-vanila-${today()}.csv<br>💿 ${own} в коллекции · ♡ ${records.length-own} в желаниях</div>
+  <div class="btns" id="csvBtns" style="margin:0"></div>
+  ${closeBtn()}`);
+  fileButtons($('#csvBtns'),`vinila-vanila-${today()}.csv`,blob,'Моя коллекция винила');
+}
+// картинка «Моя полка»: обложки стоят на полках, сверху имя и счётчики
+function loadImg(src){return new Promise(res=>{if(!src)return res(null);const i=new Image();if(!src.startsWith('data:'))i.crossOrigin='anonymous';const t=setTimeout(()=>res(null),8000);i.onload=()=>{clearTimeout(t);res(i)};i.onerror=()=>{clearTimeout(t);res(null)};i.src=src})}
+function wrapText(g,text,maxW,maxLines){const words=String(text).split(/\s+/),lines=[];let cur='';for(const w of words){const t=cur?cur+' '+w:w;if(g.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t}if(cur)lines.push(cur);if(lines.length>maxLines){lines.length=maxLines;lines[maxLines-1]=lines[maxLines-1].replace(/.?$/,'…')}return lines}
+async function shelfImage(){
+  const own=records.filter(r=>!r.wish).slice().reverse(),list=own.slice(0,16),n=Math.max(1,list.length);
+  const cols=n<=4?2:n<=9?3:4,rows=Math.ceil(n/cols);
+  const css=getComputedStyle(document.documentElement),V=k=>css.getPropertyValue(k).trim();
+  const W=1080,pad=70,gap=28,cell=(W-pad*2-gap*(cols-1))/cols,rowH=cell+64,top=300,H=top+rows*rowH+150;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+  const hf=V('--hfont'),bf=V('--bfont');
+  try{await Promise.all([document.fonts.load(`800 80px ${hf}`),document.fonts.load(`600 30px ${bf}`)])}catch(e){}
+  const bgG=g.createLinearGradient(0,0,0,H);bgG.addColorStop(0,V('--tt-a')||V('--bg'));bgG.addColorStop(.35,V('--bg'));g.fillStyle=bgG;g.fillRect(0,0,W,H);
+  g.fillStyle=V('--muted');g.font=`600 28px ${bf}`;g.fillText('МОЯ КОЛЛЕКЦИЯ ВИНИЛА',pad,110);
+  g.fillStyle=V('--ink');g.font=`800 84px ${hf}`;g.fillText(wrapText(g,profile.name||'Моя полка',W-pad*2,1)[0],pad,195);
+  const artists=new Set(own.map(r=>r.artist)).size;
+  g.fillStyle=V('--accent');g.font=`600 32px ${bf}`;g.fillText(`${own.length} ${plural(own.length,'пластинка','пластинки','пластинок')} · ${artists} ${plural(artists,'артист','артиста','артистов')}`,pad,250);
+  const imgs=await Promise.all(list.map(async r=>await loadImg(r.img)||await loadImg(r.photo)));
+  const rad=theme==='vanilla'?24:6;
+  const rr=(x,y,w,h,rd)=>{g.beginPath();g.roundRect?g.roundRect(x,y,w,h,rd):g.rect(x,y,w,h)};
+  for(let ri=0;ri<rows;ri++){
+    const y=top+ri*rowH;
+    // полка под рядом обложек
+    const pg=g.createLinearGradient(0,y+cell,0,y+cell+22);pg.addColorStop(0,V('--wood1'));pg.addColorStop(1,V('--wood2'));
+    g.save();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=24;g.shadowOffsetY=12;g.fillStyle=pg;rr(pad-24,y+cell,W-pad*2+48,22,6);g.fill();g.restore();
+    list.slice(ri*cols,ri*cols+cols).forEach((r,ci)=>{
+      const x=pad+ci*(cell+gap),im=imgs[ri*cols+ci],c=r.c||['#5a4636','#2a1d14'];
+      g.save();g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=20;g.shadowOffsetX=6;g.shadowOffsetY=6;
+      const cg=g.createLinearGradient(x,y,x+cell,y+cell);cg.addColorStop(0,c[0]);cg.addColorStop(1,c[1]);g.fillStyle=cg;rr(x,y,cell,cell,rad);g.fill();g.restore();
+      g.save();rr(x,y,cell,cell,rad);g.clip();
+      if(im){const k=Math.max(cell/im.naturalWidth,cell/im.naturalHeight),w=im.naturalWidth*k,h=im.naturalHeight*k;g.drawImage(im,x+(cell-w)/2,y+(cell-h)/2,w,h)}
+      else{
+        g.fillStyle=r.dark?'#2a1a0a':'#fff';const fs=Math.round(cell/7.5);g.font=`700 ${fs}px ${hf}`;
+        const lines=wrapText(g,r.title,cell-36,3);lines.forEach((l,i)=>g.fillText(l,x+18,y+cell-26-fs*.35-(lines.length-1-i)*fs*1.1-fs*.9));
+        g.font=`600 ${Math.round(fs*.5)}px ${bf}`;g.globalAlpha=.85;g.fillText(wrapText(g,r.artist.toUpperCase(),cell-36,1)[0],x+18,y+cell-22);g.globalAlpha=1;
+      }
+      g.restore();
+    });
+  }
+  if(!own.length){g.fillStyle=V('--muted');g.font=`500 34px ${bf}`;g.fillText('Полка пока пуста',pad,top+cell/2)}
+  g.fillStyle=V('--accent');g.font=`700 40px ${hf}`;g.fillText('Винила-ванила',pad,H-60);
+  if(own.length>list.length){g.fillStyle=V('--muted');g.font=`600 28px ${bf}`;const t=`и ещё ${own.length-list.length} на полке`;g.fillText(t,W-pad-g.measureText(t).width,H-64)}
+  return new Promise(res=>cv.toBlob(res,'image/jpeg',.9));
+}
+async function openShareShelf(){
+  openSheet(`<div class="grab"></div><h3 class="sh-t" id="shBody">Моя полка</h3>
+  <p class="hint" style="padding:0;margin:4px 0 12px">Картинка с обложками вашей коллекции: отправьте друзьям или выложите в сторис.</p>
+  <div class="shprev" id="shPrev"><div class="spinner"></div></div>
+  <div class="btns" id="shBtns" style="margin:12px 0 0"></div>
+  ${closeBtn()}`);
+  let blob=null;try{blob=await shelfImage()}catch(e){}
+  if(!$('#shBody'))return; // шторку уже закрыли
+  if(!blob){$('#shPrev').innerHTML='<p class="hint">Не получилось нарисовать картинку</p>';return}
+  $('#shPrev').innerHTML=`<img src="${URL.createObjectURL(blob)}" alt="Моя полка">`;
+  fileButtons($('#shBtns'),'vinila-vanila-polka.jpg',blob,'Моя полка винила');
+}
+function openAbout(){
+  openSheet(`<div class="grab"></div>
+  <div style="text-align:center;margin:4px 0 14px"><img src="icon-192.png" alt="" style="width:72px;height:72px;border-radius:18px"><h3 class="sh-t" style="margin-top:8px">Винила-ванила</h3><small style="color:var(--muted)">Версия ${VERSION}</small></div>
+  <p class="prose" style="margin-bottom:6px">Цифровая полка вашей коллекции винила: обложки, трек-листы, история групп, полные треки и метки на конвертах. Чтобы винил жил дольше, а о каждой пластинке оставалась память.</p>
+  <div class="side-lbl">КАК ПОЛЬЗОВАТЬСЯ</div>
+  <ul class="howto">
+    <li><b>＋ Добавить</b>: сфотографируйте конверт или возьмите фото из галереи, найдите пластинку в базе или впишите вручную. «Хочу купить» кладёт её в список желаний.</li>
+    <li><b>Долгое нажатие</b> на пластинку открывает меню: перенести, сменить обложку, цена, метка, удалить.</li>
+    <li><b>🏷 Метка</b>: запишите NFC-метку или напечатайте QR-наклейку на конверт. Поднесли телефон — открылась карточка.</li>
+    <li><b>▶ Вертушка</b>: полные треки играют прямо в приложении.</li>
+    <li><b>Профиль → Резервная копия</b>: коллекция хранится только на этом телефоне, поэтому время от времени сохраняйте копию.</li>
+  </ul>
+  <div class="side-lbl">ДАННЫЕ И ИСТОЧНИКИ</div>
+  <p class="note" style="margin:0">Спасибо открытым проектам: MusicBrainz (база изданий), Cover Art Archive (обложки), Википедия (биографии), Discogs (рыночные цены), YouTube и Apple Music (музыка). Всё бесплатно и без регистрации. Коллекция хранится только на этом телефоне, в интернет уходят лишь поисковые запросы к этим базам.</p>
+  ${closeBtn()}`);
+}
+$('#pcard').onclick=openProfileSheet;
+$('#valueRow').onclick=openValue;
+$('#backupRow').onclick=openBackup;
+$('#csvRow').onclick=openCSV;
+$('#shareRow').onclick=openShareShelf;
+$('#aboutRow').onclick=openAbout;
+
 async function writeNFC(r,url,text){
   const ring=$('#ring'),st=$('#nfcStatus');
   ring.className='nfc-ring wait';ring.textContent='📡';st.textContent='Поднесите метку к телефону…';
@@ -1000,13 +1386,15 @@ const route=(h,mode)=>{const m=(h||'').match(/r=(\w+)/);if(m)openByCode(m[1],mod
 // метку прочитали, когда приложение уже открыто: переход по #r=… уже добавил запись в историю — занимаем её
 window.addEventListener('hashchange',()=>{const h=location.hash;if(!/r=\w+/.test(h))return;depth++;history.replaceState(null,'',location.pathname+location.search);route(h,'replace')});
 
-try{const s=JSON.parse(localStorage.getItem('vv-records'));if(Array.isArray(s))records=s}catch(e){} // пустая полка тоже сохраняется — примеры не возвращаются
 let saved='strict';try{saved=localStorage.getItem('vv-theme')||'strict'}catch(e){}
-setTheme(saved);
+if(saved==='vanilla')document.documentElement.dataset.theme='vanilla'; // цвета сразу, полка — после загрузки
 const startHash=location.hash;
 history.replaceState({v:'shelf',d:0},'',location.pathname+location.search);
-show('shelf',{anim:false});
-route(startHash);
+loadRecords().finally(()=>{
+  setTheme(saved);
+  show('shelf',{anim:false});
+  route(startHash);
+});
 /* ---------- установка на телефон ---------- */
 const STANDALONE=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 // «Версия для ПК» на телефоне: экран сенсорный, а браузер притворяется компьютером
