@@ -11,6 +11,25 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script>
+// В Chrome на телефоне может быть включено «Версия для ПК»: тогда страница считается шириной ~980px
+// и всё становится мелким. Определяем это и увеличиваем интерфейс до реальной ширины экрана.
+(function(){
+  var de=document.documentElement;
+  function fit(){
+    if(!matchMedia('(pointer:coarse)').matches)return;
+    de.style.zoom='';
+    var lw=de.clientWidth, sw=screen.width;
+    var k=(sw&&lw>sw*1.25)?lw/sw:1;
+    de.style.zoom=k>1?String(k):'';
+    de.classList.toggle('pc-mode',k>1);
+  }
+  fit();
+  addEventListener('resize',fit);
+  addEventListener('orientationchange',function(){setTimeout(fit,300)});
+  window.__fit=fit;
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Inter:wght@400;500;600&family=Comfortaa:wght@500;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 /* Тема «Строгая» */
@@ -251,6 +270,8 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
 .myphoto img{width:56px;height:56px;object-fit:cover;border-radius:8px}
 /* Телефон и установленное приложение: на весь экран, как обычное приложение (без макета-рамки) */
 @media (max-width:820px),(pointer:coarse),(display-mode:standalone){
+  /* пальцами можно листать, но не масштабировать — как в обычном приложении */
+  html,html *{touch-action:pan-x pan-y}
   html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   body{padding:0;display:block;background:var(--bg)}
   .stage{display:block;width:100%;max-width:none}
