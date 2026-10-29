@@ -21,6 +21,9 @@
     de.style.zoom='';
     var lw=de.clientWidth, sw=screen.width;
     var k=(sw&&lw>sw*1.25)?lw/sw:1;
+    // в этом режиме Chrome может подменять и ширину экрана — тогда считаем телефон шириной ~400px
+    var pc=navigator.maxTouchPoints>0&&!/Android|iPhone|iPad|Mobile/.test(navigator.userAgent);
+    if(k===1&&pc&&lw>600)k=lw/400;
     de.style.zoom=k>1?String(k):'';
     de.classList.toggle('pc-mode',k>1);
   }
@@ -28,6 +31,8 @@
   addEventListener('resize',fit);
   addEventListener('orientationchange',function(){setTimeout(fit,300)});
   window.__fit=fit;
+  // Chrome сообщает, что приложение можно установить — запоминаем, чтобы показать свою кнопку «Установить»
+  addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__bip=e;if(window.updateInstallBar)updateInstallBar()});
 })();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Inter:wght@400;500;600&family=Comfortaa:wght@500;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
@@ -247,6 +252,9 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
 .ritem .th .cover .ct,.ritem .th .cover .ca{display:none}
 .ritem>div:nth-child(2){min-width:0}
 .ritem b,.ritem small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.banner{margin:0 20px 14px;padding:12px 14px;border-radius:16px;background:var(--panel);border:1px solid var(--accent);font-size:14px;line-height:1.45;display:flex;gap:10px;align-items:center}
+.banner[hidden]{display:none}
+.banner .btn{flex:none;padding:10px 14px}
 .empty{text-align:center;color:var(--muted);font-size:14px;padding:40px 30px;line-height:1.6}
 .empty i{font-style:normal;font-size:40px;display:block;margin-bottom:8px}
 /* метки NFC / QR */
@@ -318,6 +326,7 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
           <div class="hdr"><div><small>Моя коллекция</small><h2>Полка</h2></div><div style="display:flex;gap:8px;align-items:center"><div class="theme-sw"><button data-theme-set="strict" title="Строгий">◼</button><button data-theme-set="vanilla" title="Ванильный">🍦</button></div><div class="avatar" id="avatarBtn">К</div></div></div>
           <div class="chips" id="chips"></div>
         </div>
+        <div class="banner" id="installBar" hidden></div>
         <div class="stats">
           <div class="stat"><b id="s-count">0</b><span>пластинок</span></div>
           <div class="stat"><b id="s-art">0</b><span>артистов</span></div>
@@ -383,6 +392,7 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
           <div class="row" style="flex-direction:column;gap:8px">Резервный ключ YouTube (необязательно)
             <div style="display:flex;gap:8px"><input id="ytKey" placeholder="Ключ YouTube Data API v3" style="flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 12px;color:var(--ink);font:inherit;font-size:13px;outline:none"><button class="btn pri" style="flex:none" id="ytSave">Сохранить</button></div>
             <span style="font-size:11px">Бесплатно: console.cloud.google.com → включить YouTube Data API v3 → «Учётные данные» → ключ API</span></div>
+          <div class="row" id="installRow" style="cursor:pointer">Установить на телефон<span>📲</span></div>
           <div class="row">Синхронизация с облаком<span>вкл.</span></div>
           <div class="row">Экспорт коллекции (CSV / Discogs)<span>›</span></div>
           <div class="row">Публичная полка (ссылка друзьям)<span>скоро</span></div>
@@ -850,6 +860,25 @@ const startHash=location.hash;
 history.replaceState({v:'shelf',d:0},'',location.pathname+location.search);
 show('shelf',{anim:false});
 route(startHash);
+/* ---------- установка на телефон ---------- */
+const STANDALONE=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+// «Версия для ПК» на телефоне: экран сенсорный, а браузер притворяется компьютером
+const PC_MODE=navigator.maxTouchPoints>0&&!/Android|iPhone|iPad|Mobile/.test(navigator.userAgent)&&/Linux|X11|Macintosh/.test(navigator.userAgent);
+async function installApp(){
+  if(window.__bip){window.__bip.prompt();await window.__bip.userChoice;window.__bip=null;updateInstallBar();return}
+  toast(PC_MODE?'Сначала выключите «Версия для ПК» в меню ⋮':'Меню ⋮ Chrome → «Установить приложение»');
+}
+function updateInstallBar(){
+  const b=$('#installBar');
+  if(STANDALONE){b.hidden=true;$('#installRow').style.display='none';return}
+  if(PC_MODE){b.innerHTML='<span>⚠️ В Chrome включена <b>«Версия для ПК»</b> — из-за неё всё мелкое и приложение нельзя установить. Нажмите <b>⋮</b> вверху и снимите галочку <b>«Версия для ПК»</b>.</span>';b.hidden=false;return}
+  if(window.__bip){b.innerHTML='<span style="flex:1">📲 Установите «Винила-ванила» как приложение — на весь экран, со своей иконкой</span><button class="btn pri" id="installBtn">Установить</button>';b.hidden=false;$('#installBtn').onclick=installApp;return}
+  b.hidden=true;
+}
+window.updateInstallBar=updateInstallBar;
+addEventListener('appinstalled',()=>{window.__bip=null;updateInstallBar();toast('Приложение установлено ✓')});
+$('#installRow').onclick=installApp;
+updateInstallBar();
 if('serviceWorker' in navigator&&OWN_HOST)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
