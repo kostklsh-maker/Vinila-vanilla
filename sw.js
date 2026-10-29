@@ -2,7 +2,7 @@
 // При установке файлы приложения сразу сохраняются на телефоне.
 // Дальше сначала берём свежую версию из интернета (обновления на GitHub видны сразу),
 // а сохранённую копию показываем, когда сети нет.
-const CACHE = 'vv-app-v3';
+const CACHE = 'vv-app-v4';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon.svg'];
 self.addEventListener('install', e => {
   self.skipWaiting();
