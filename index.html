@@ -184,7 +184,7 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
 .links a span{color:var(--muted)}
 .src{font-size:11px;color:var(--muted);margin-top:8px}
 /* add */
-.cam{margin:0 20px 16px;height:300px;border-radius:24px;background:var(--panel2);border:1px dashed var(--muted);position:relative;overflow:hidden;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:13px;cursor:pointer}
+.cam{margin:0 20px 12px;height:240px;border-radius:24px;background:var(--panel2);border:1px dashed var(--muted);position:relative;overflow:hidden;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:13px;cursor:pointer}
 .cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .cam .frame{position:absolute;inset:40px;border:2px solid var(--accent);border-radius:8px;box-shadow:0 0 0 999px #0007}
 .cam .scan{position:absolute;left:40px;right:40px;height:2px;background:var(--accent);box-shadow:0 0 14px var(--accent);top:40px;animation:scan 1.6s ease-in-out infinite alternate;display:none}
@@ -276,6 +276,37 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
 .tagbadge{position:absolute;top:6px;left:6px;background:var(--accent);color:var(--onaccent);font-size:11px;padding:2px 6px;border-radius:8px;z-index:2}
 .myphoto{display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;margin-bottom:16px;font-size:12px;color:var(--muted)}
 .myphoto img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+/* как в обычном приложении: долгое нажатие не выделяет текст и не открывает меню браузера */
+body{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+input,textarea{-webkit-touch-callout:default;-webkit-user-select:text;user-select:text}
+img{-webkit-user-drag:none}
+.cover img,.th img,.myphoto img,.cam img{pointer-events:none}
+/* меню действий с пластинкой (долгое нажатие или ⋯ в карточке) */
+.act-h{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.act-h .th{width:56px;height:56px;flex:none;border-radius:var(--r-cover);overflow:hidden;background:var(--panel2)}
+.act-h .th .cover{padding:0}
+.act-h .th .cover .ct,.act-h .th .cover .ca{display:none}
+.act-h>div:last-child{min-width:0}
+.act-h b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-h small{display:block;color:var(--muted);font-size:12px}
+.act button{display:flex;gap:14px;align-items:center;width:100%;padding:15px 8px;border:none;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:15px;text-align:left;cursor:pointer}
+.act button:active{background:var(--panel2)}
+.act button i{font-style:normal;width:24px;text-align:center}
+.act button.danger{color:#e5484d;border-bottom:none}
+.act button.danger.sure{background:#e5484d;color:#fff;border-radius:12px;font-weight:600}
+/* добавление: куда (полка / список желаний) и откуда (камера / галерея) */
+.seg{display:flex;margin:0 20px 14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:3px;gap:3px}
+.seg button{flex:1;padding:11px 6px;border:none;border-radius:11px;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--onaccent)}
+.pick{display:flex;gap:8px;margin:0 20px 16px}
+.pick .btn{padding:14px 8px;text-align:center}
+.cam.has .frame,.cam.has #camtxt{display:none}
+.linkbtn{display:block;margin:0 auto 14px;background:none;border:none;color:var(--accent);font:inherit;font-size:13px;font-weight:600;padding:8px 20px;cursor:pointer}
+.manual{margin:0 20px 16px;display:flex;flex-direction:column;gap:8px}
+.manual[hidden]{display:none}
+.manual input{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font:inherit;font-size:16px;outline:none}
+.manual input:focus{border-color:var(--accent)}
+.shelf-row>.empty{width:100%;padding:30px 10px}
 /* Телефон и установленное приложение: на весь экран, как обычное приложение (без макета-рамки) */
 @media (max-width:820px),(pointer:coarse),(display-mode:standalone){
   /* пальцами можно листать, но не масштабировать — как в обычном приложении */
@@ -332,7 +363,7 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
           <div class="stat"><b id="s-art">0</b><span>артистов</span></div>
           <div class="stat"><b id="s-hours">0</b><span>часов музыки</span></div>
         </div>
-        <div class="sec-t"><span>Недавно добавленные</span><span>листать →</span></div>
+        <div class="sec-t"><span id="secT1">Недавно добавленные</span><span>листать →</span></div>
         <div class="shelf"><div class="shelf-row" id="row1"></div><div class="plank"></div></div>
         <div class="sec-t"><span>Вся полка · корешки</span><span id="s-sort">по артисту</span></div>
         <div class="shelf"><div class="spines" id="spines"></div><div class="plank"></div></div>
@@ -355,15 +386,27 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
       <section class="view" id="v-add">
         <div class="top"><div class="hdr"><div><small>Новая пластинка</small><h2>Добавить</h2></div></div></div>
         <div style="padding:0 20px 14px"><button class="btn" style="width:100%" id="scanTag">📡 Прочитать метку на конверте</button></div>
-        <label class="cam" id="cam">
-          <input type="file" accept="image/*" capture="environment" id="file" hidden>
-          <div id="camtxt">📷<br><br>Сфотографируйте обложку<br><span style="font-size:11px">или нажмите, чтобы выбрать фото</span></div>
-          <div class="frame"></div><div class="scan"></div>
+        <div class="seg" id="addTo"><button data-to="shelf" class="on">💿 В коллекцию</button><button data-to="wish">♡ Хочу купить</button></div>
+        <label class="cam" id="cam" for="gal">
+          <div id="camtxt" style="padding:0 20px"><span style="font-size:34px">🖼</span><br>Фото обложки<br><span style="font-size:11px">с камеры или из галереи —<br>появится в карточке пластинки</span></div>
         </label>
-        <div class="or">— или найдите вручную —</div>
-        <div class="search"><input id="mbq" placeholder="Например: Kino Группа крови"><button class="btn pri" style="flex:none" id="mbgo">Найти</button></div>
+        <div class="pick">
+          <label class="btn" for="file">📷 Камера</label>
+          <label class="btn" for="gal">🖼 Из галереи</label>
+          <input type="file" accept="image/*" capture="environment" id="file" hidden>
+          <input type="file" accept="image/*" id="gal" hidden>
+        </div>
+        <div class="or">— найдите пластинку в базе —</div>
+        <div class="search"><input id="mbq" type="search" enterkeyhint="search" autocomplete="off" placeholder="Например: Kino Группа крови"><button class="btn pri" style="flex:none" id="mbgo">Найти</button></div>
         <div class="hint" id="hint">Поиск идёт в открытой базе MusicBrainz (бесплатно, без ключа).</div>
         <div class="res" id="res"></div>
+        <button class="linkbtn" id="manualToggle">Нет в базе? Добавить вручную →</button>
+        <div class="manual" id="manual" hidden>
+          <input id="mArtist" placeholder="Артист" autocomplete="off">
+          <input id="mTitle" placeholder="Альбом" autocomplete="off">
+          <input id="mYear" placeholder="Год (необязательно)" inputmode="numeric" maxlength="4" autocomplete="off">
+          <button class="btn pri" id="mAdd">Добавить</button>
+        </div>
       </section>
 
       <!-- PLAYER -->
@@ -396,7 +439,7 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
           <div class="row">Синхронизация с облаком<span>вкл.</span></div>
           <div class="row">Экспорт коллекции (CSV / Discogs)<span>›</span></div>
           <div class="row">Публичная полка (ссылка друзьям)<span>скоро</span></div>
-          <div class="row">Список желаний (wantlist)<span>скоро</span></div>
+          <div class="row" id="wishRow" style="cursor:pointer">Список желаний<span id="wishC">0</span></div>
           <div class="row">Оценка стоимости коллекции<span>скоро</span></div>
           <div class="row">О проекте «Винила-ванила»<span>›</span></div>
           <p class="note" style="margin:18px 0 0">Винила-ванила — чтобы винил жил дольше: цифровая память о каждой пластинке на вашей полке.</p>
@@ -449,7 +492,8 @@ let theme='strict';
 let genre='Все', current=null, queue=[], qi=0, playing=false, pos=0, dur=0, timer=null;
 
 function coverHTML(r,big){
-  if(r.img) return `<div class="cover"><img src="${r.img}" alt=""><div class="ct" style="display:none"></div></div>`;
+  // под картинкой — название: видно, если обложки в архиве нет
+  if(r.img) return `<div class="cover" style="background:linear-gradient(160deg,${(r.c||['#5a4636'])[0]},${(r.c||[,'#2a1d14'])[1]});color:#fff"><div class="ct" style="font-size:${big?24:15}px">${r.title}</div><div class="ca">${r.artist}${r.year?' · '+r.year:''}</div><img src="${r.img}" alt="" data-fb="${r.id}" onerror="coverFail(this)"></div>`;
   const [a,b]=r.c; let deco='';
   if(r.art==='prism') deco=`<svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%"><line x1="0" y1="58" x2="38" y2="50" stroke="#fff" stroke-width="1.2"/><polygon points="50,28 72,66 28,66" fill="none" stroke="#fff" stroke-width="1.5"/><g stroke-width="2.2"><line x1="60" y1="47" x2="100" y2="54" stroke="#e33"/><line x1="61" y1="49" x2="100" y2="58" stroke="#f90"/><line x1="62" y1="51" x2="100" y2="62" stroke="#fe3"/><line x1="63" y1="53" x2="100" y2="66" stroke="#3c4"/><line x1="64" y1="55" x2="100" y2="70" stroke="#39f"/><line x1="65" y1="57" x2="100" y2="74" stroke="#a3f"/></g></svg>`;
   if(r.art==='blood') deco=`<div style="position:absolute;inset:18% 22% 30%;border-radius:50% 50% 45% 45%;background:radial-gradient(circle at 40% 35%,#ff6b6b,#7a0000);opacity:.9"></div>`;
@@ -458,25 +502,32 @@ function coverHTML(r,big){
   if(r.art==='type') deco=`<div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,#ffffff08 0 6px,transparent 6px 12px)"></div>`;
   return `<div class="cover" style="background:linear-gradient(160deg,${a},${b});color:${r.dark?'#2a1a0a':'#fff'}">${deco}<div class="ct" style="font-size:${big?24:15}px">${r.title}</div><div class="ca">${r.artist} · ${r.year}</div></div>`;
 }
-const sides=r=>['A','B','C','D'].filter(k=>r[k]);
+// обложки нет в архиве — показываем своё фото конверта, а если и его нет — название на цветном фоне
+function coverFail(img){const r=records.find(x=>x.id==img.dataset.fb);if(r&&r.photo&&!img.dataset.tried){img.dataset.tried=1;img.src=r.photo}else img.remove()}
+const sides=r=>['A','B','C','D'].filter(k=>r[k]&&r[k].length);
 const tracks=r=>sides(r).flatMap(k=>r[k].map(x=>({...x,side:k})));
 const secs=d=>{if(!d)return 180;const [m,s]=d.split(':').map(Number);return m*60+(s||0)};
 const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 
+// коллекция — пластинки без пометки wish; список желаний — фильтр «♡ Хочу»
 function renderShelf(){
-  const list=records.filter(r=>genre==='Все'||r.genre===genre);
-  const genres=['Все',...new Set(records.map(r=>r.genre))];
-  $('#chips').innerHTML=genres.map(g=>`<div class="chip ${g===genre?'on':''}" data-g="${g}">${g}</div>`).join('');
-  $('#row1').innerHTML=[...list].reverse().map(r=>`<div class="sleeve" data-id="${r.id}"><div class="disc"></div>${r.tag?'<span class="tagbadge">🏷</span>':''}${coverHTML(r)}</div>`).join('')||'<p class="hint">Ничего не найдено</p>';
+  const own=records.filter(r=>!r.wish),wish=records.filter(r=>r.wish);
+  const genres=['Все',...new Set(own.map(r=>r.genre))];
+  if(genre!=='♡'&&!genres.includes(genre))genre='Все';
+  const list=genre==='♡'?wish:own.filter(r=>genre==='Все'||r.genre===genre);
+  $('#chips').innerHTML=['Все','♡',...genres.slice(1)].map(g=>`<div class="chip ${g===genre?'on':''}" data-g="${g}">${g==='♡'?'♡ Хочу'+(wish.length?' · '+wish.length:''):g}</div>`).join('');
+  $('#secT1').textContent=genre==='♡'?'Хочу купить':'Недавно добавленные';
+  $('#row1').innerHTML=[...list].reverse().map(r=>`<div class="sleeve" data-id="${r.id}"><div class="disc"></div>${r.tag?'<span class="tagbadge">🏷</span>':''}${coverHTML(r)}</div>`).join('')
+    ||(genre==='♡'?'<div class="empty"><i>♡</i>Список желаний пуст.<br>Нажмите ＋ → «Хочу купить»</div>':'<div class="empty"><i>💿</i>Полка пуста.<br>Добавьте пластинку кнопкой ＋</div>');
   $('#spines').innerHTML=[...list].sort((a,b)=>a.artist.localeCompare(b.artist)).map((r,i)=>{
     const v=theme==='vanilla', p=PASTEL[i%PASTEL.length];
     const bg=v?`linear-gradient(90deg,${p},${p}cc)`:`linear-gradient(90deg,${r.c[0]},${r.c[1]})`;
     const fg=v?'#5b4a66':(r.dark?'#2a1a0a':'#f3e9dc');
     return `<div class="spine" data-id="${r.id}" style="background:${bg};color:${fg}">${r.artist} — ${r.title}</div>`}).join('');
-  $('#s-count').textContent=records.length;
-  $('#s-art').textContent=new Set(records.map(r=>r.artist)).size;
-  $('#s-hours').textContent=(records.reduce((s,r)=>s+tracks(r).reduce((a,t)=>a+secs(t.d),0),0)/3600).toFixed(1);
-  $('#p-c').textContent=records.length;
+  $('#s-count').textContent=own.length;
+  $('#s-art').textContent=new Set(own.map(r=>r.artist)).size;
+  $('#s-hours').textContent=(own.reduce((s,r)=>s+tracks(r).reduce((a,t)=>a+secs(t.d),0),0)/3600).toFixed(1);
+  $('#p-c').textContent=own.length;$('#wishC').textContent=wish.length;
   renderSearch();
 }
 
@@ -490,7 +541,7 @@ function renderSearch(){
   });
   list.sort((a,b)=>a.r.artist.localeCompare(b.r.artist));
   $('#qhint').textContent=q?(list.length?`Найдено: ${list.length}`:''):`Вся полка · ${records.length}`;
-  $('#qres').innerHTML=list.length?list.map(({r,t})=>`<div class="ritem" data-open="${r.id}"><div class="th">${coverHTML(r)}</div><div><b>${r.title}</b><small>${r.artist} · ${r.year||'—'}${t?' · ♪ '+t.t:' · '+r.genre}</small></div><span class="plus">›</span></div>`).join('')
+  $('#qres').innerHTML=list.length?list.map(({r,t})=>`<div class="ritem" data-open="${r.id}"><div class="th">${coverHTML(r)}</div><div><b>${r.title}</b><small>${r.wish?'♡ ':''}${r.artist} · ${r.year||'—'}${t?' · ♪ '+t.t:' · '+r.genre}</small></div><span class="plus">›</span></div>`).join('')
     :'<div class="empty"><i>🔍</i>На полке такого нет.<br>Добавьте пластинку кнопкой ＋</div>';
 }
 
@@ -534,6 +585,7 @@ window.addEventListener('popstate',e=>{
   const s=e.state||{v:'shelf',d:0},sheetWasOpen=$('#tagBg').classList.contains('on');
   depth=s.d||0;
   if(!s.sheet)$('#tagBg').classList.remove('on');
+  if(sheetWasOpen&&!s.sheet&&s.v===curView&&s.v!=='detail')return; // закрыли меню на полке или в поиске — экран не трогаем
   if(s.v==='detail'){
     // закрыли окно метки — тихо обновляем ту же карточку
     if(sheetWasOpen&&curView==='detail'&&curId==s.id)openRecord(s.id,'none',{anim:false,keep:true,quiet:true});
@@ -551,15 +603,16 @@ async function openRecord(id,mode='push',opt={}){
   v.innerHTML=`<div class="appbar"><button class="ic round" id="dBack" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span class="ab-t">${r.title}</span></div>
   <div class="hero${opt.quiet?' out':''}" id="hero"><div class="vinyl" id="hv"><div class="lbl" style="background:${r.lbl||'#c43'}"></div></div><div class="sleeve">${coverHTML(r,1)}</div></div>
   <div class="dt"><h3>${r.title}</h3><div class="art">${r.artist}</div>
-  <div class="meta"><span>${r.year||'—'}</span><span>${r.genre}</span><span>${r.label||'—'}</span><span>${tracks(r).length} треков</span><span>${sides(r).length>2?'2LP':'LP'}</span>${r.tag?`<span>🏷 метка ${Object.keys(r.tag).join(' + ').toUpperCase()}</span>`:''}</div>
-  <div class="btns"><button class="btn pri" id="playall">▶ Поставить на вертушку</button><button class="btn" style="flex:none;width:52px" id="tagBtn" title="Метка на конверт">🏷</button><button class="btn" style="flex:none;width:52px">♡</button></div>
+  <div class="meta"><span>${r.year||'—'}</span><span>${r.genre}</span>${r.label?`<span>${r.label}</span>`:''}${tracks(r).length?`<span>${tracks(r).length} треков</span>`:''}<span>${sides(r).length>2?'2LP':'LP'}</span>${r.wish?'<span>♡ хочу купить</span>':''}${r.tag?`<span>🏷 метка ${Object.keys(r.tag).join(' + ').toUpperCase()}</span>`:''}</div>
+  ${r.wish?'<div class="banner" style="margin:0 0 14px"><span style="flex:1">♡ В списке желаний</span><button class="btn pri" id="gotIt">Купил ✓</button></div>':''}
+  <div class="btns"><button class="btn pri" id="playall">▶ Поставить на вертушку</button><button class="btn" style="flex:none;width:52px" id="tagBtn" title="Метка на конверт">🏷</button><button class="btn" style="flex:none;width:52px;font-size:18px" id="moreBtn" aria-label="Ещё">⋯</button></div>
   ${r.photo?`<div class="myphoto"><img src="${r.photo}" alt=""><div><b style="color:var(--ink)">Моё фото конверта</b><br>сделано при добавлении на полку</div></div>`:''}
   <div class="tabs2"><button class="on" data-t="tl">Трек-лист</button><button data-t="bio">О группе</button><button data-t="links">Ссылки</button></div>
   <div id="tc"></div></div>`;
   if(!opt.quiet)setTimeout(()=>$('#hero')?.classList.add('out'),80);
   $('#dBack').onclick=goBack;
   const tabs={
-    tl:()=>sides(r).map(k=>`<div class="side-lbl">СТОРОНА ${k}</div>`+r[k].map((t,i)=>`<div class="trk" data-k="${k}" data-i="${i}"><span class="n">${k}${i+1}</span><span class="t">${t.t}</span><span class="d">${t.d||''}</span></div>`).join('')).join(''),
+    tl:()=>!sides(r).length?'<div class="empty"><i>📝</i>Трек-лист не указан.<br>Найдите эту пластинку через ＋ → поиск, чтобы подтянуть треки.</div>':sides(r).map(k=>`<div class="side-lbl">СТОРОНА ${k}</div>`+r[k].map((t,i)=>`<div class="trk" data-k="${k}" data-i="${i}"><span class="n">${k}${i+1}</span><span class="t">${t.t}</span><span class="d">${t.d||''}</span></div>`).join('')).join(''),
     bio:()=>'<div class="spinner"></div>',
     links:()=>{const a=encodeURIComponent(r.artist),t=encodeURIComponent(r.artist+' '+r.title);const lang=r.lang||'en';
       return `<div class="links">
@@ -578,8 +631,10 @@ async function openRecord(id,mode='push',opt={}){
   };
   v.querySelectorAll('.tabs2 button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
   v.onclick=e=>{const tr=e.target.closest('.trk');if(tr){const all=tracks(r);const idx=all.findIndex(x=>x.side===tr.dataset.k&&x.t===r[tr.dataset.k][tr.dataset.i].t);load(r,idx);}};
-  $('#playall').onclick=()=>{load(r,0);go('player')};
+  $('#playall').onclick=()=>{if(!tracks(r).length){toast('Трек-лист не указан');return}load(r,0);go('player')};
   $('#tagBtn').onclick=()=>openTagSheet(r);
+  $('#moreBtn').onclick=()=>openActions(r.id);
+  if(r.wish)$('#gotIt').onclick=()=>{setWish(r,false);openRecord(r.id,'none',{anim:false,keep:true,quiet:true})};
   setTab('tl');
   show('detail',{anim:opt.anim===undefined?'a-push':opt.anim,keep:opt.keep});
 }
@@ -724,11 +779,34 @@ async function mbAdd(id,el){
     media.forEach((m,mi)=>{rec[letters[mi]]=(m.tracks||[]).map(t=>({t:t.title,d:t.length?fmt(t.length/1000):''}))});
     if(!media.length) rec.A=[{t:'(трек-лист не указан)',d:''}];
     // если сторон > 4 — оставим 4 для макета
-    if(pendingPhoto){rec.photo=pendingPhoto;pendingPhoto=null}
-    // карточка новой пластинки заменяет экран «Добавить»: «Назад» ведёт на полку
-    records.push(rec);save();renderShelf();toast('Добавлено на полку ✓');openRecord(rec.id,'replace');
-    setTimeout(()=>openTagSheet(rec),900);
+    if(pendingPhoto)rec.photo=pendingPhoto;
+    addRecord(rec);
   }catch(e){el.style.opacity=1;toast('Ошибка загрузки')}
+}
+// пластинки нет в MusicBrainz: артист, альбом и своё фото как обложка
+function manualAdd(){
+  const clean=s=>s.replace(/[<>"`]/g,'').trim();
+  const artist=clean($('#mArtist').value),title=clean($('#mTitle').value);
+  if(!artist||!title){toast('Укажите артиста и альбом');return}
+  const rec={id:Date.now(),title,artist,year:clean($('#mYear').value).slice(0,4),genre:'Новое',c:['#5a4636','#2a1d14'],lbl:'#e0a458',A:[]};
+  if(pendingPhoto)rec.img=pendingPhoto;
+  addRecord(rec);
+}
+let addTo='shelf';
+function setAddTo(t){addTo=t;document.querySelectorAll('#addTo button').forEach(b=>b.classList.toggle('on',b.dataset.to===t))}
+function addRecord(rec){
+  if(addTo==='wish')rec.wish=true;
+  records.push(rec);genre=rec.wish?'♡':'Все';save();renderShelf();resetAdd();
+  toast(rec.wish?'Добавлено в список желаний ♡':'Добавлено на полку ✓');
+  // карточка новой пластинки заменяет экран «Добавить»: «Назад» ведёт на полку
+  openRecord(rec.id,'replace');
+  if(!rec.wish)setTimeout(()=>openTagSheet(rec),900);
+}
+function resetAdd(){
+  pendingPhoto=null;$('#cam').querySelector('img')?.remove();$('#cam').classList.remove('has');
+  $('#file').value='';$('#gal').value='';$('#mbq').value='';$('#res').innerHTML='';
+  $('#manual').hidden=true;['#mArtist','#mTitle','#mYear'].forEach(s=>$(s).value='');
+  $('#hint').textContent='Поиск идёт в открытой базе MusicBrainz (бесплатно, без ключа).';
 }
 
 /* ---------- events ---------- */
@@ -736,7 +814,8 @@ function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clea
 document.addEventListener('click',e=>{
   const s=e.target.closest('.sleeve[data-id],.spine');if(s&&!s.closest('.hero'))openRecord(s.dataset.id);
   const c=e.target.closest('.chip');if(c){genre=c.dataset.g;renderShelf()}
-  const t=e.target.closest('.tab');if(t){goTab(t.dataset.v);if(t.dataset.v==='search'&&!$('#q').value)$('#q').focus()}
+  const t=e.target.closest('.tab');if(t){if(t.dataset.v==='add'&&genre==='♡')setAddTo('wish');goTab(t.dataset.v);if(t.dataset.v==='search'&&!$('#q').value)$('#q').focus()}
+  const at=e.target.closest('#addTo button');if(at)setAddTo(at.dataset.to);
   const m=e.target.closest('.ritem[data-mb]');if(m)mbAdd(m.dataset.mb,m);
   const o=e.target.closest('.ritem[data-open]');if(o){$('#q').blur();openRecord(o.dataset.open)}
 });
@@ -753,15 +832,17 @@ $('#bar').onclick=e=>{if(!current)return;const b=e.currentTarget.getBoundingClie
 $('#ytKey').value=getKey();
 $('#ytSetup').onclick=()=>{goTab('prof');$('#ytKey').focus()};
 $('#ytSave').onclick=()=>{try{localStorage.setItem('vv-ytkey',$('#ytKey').value.trim())}catch(e){}toast($('#ytKey').value.trim()?'Ключ сохранён — полные треки включены':'Ключ удалён')};
-$('#file').onchange=e=>{
+// фото с камеры или из галереи прикрепляется к пластинке, которую добавите следом
+const onPhoto=e=>{
   const f=e.target.files[0];if(!f)return;const cam=$('#cam');
-  cam.querySelector('img')?.remove();const img=new Image();img.src=URL.createObjectURL(f);cam.prepend(img);
+  cam.querySelector('img')?.remove();const img=new Image();img.src=URL.createObjectURL(f);cam.prepend(img);cam.classList.add('has');
   shrink(img).then(d=>pendingPhoto=d);
-  $('#camtxt').style.display='none';cam.classList.add('scanning');$('#hint').textContent='Распознаю обложку…';
-  setTimeout(()=>{cam.classList.remove('scanning');
-    $('#hint').innerHTML='Распознавание по фото в макете имитируется — введите артиста и альбом ниже, поиск настоящий. В рабочей версии: AI-распознавание обложки + сканер штрихкода.';
-    $('#mbq').focus();},2200);
+  $('#hint').textContent='Фото прикреплено ✓ Найдите эту пластинку в базе — или добавьте вручную, тогда фото станет обложкой.';
 };
+$('#file').onchange=onPhoto;$('#gal').onchange=onPhoto;
+$('#manualToggle').onclick=()=>{const m=$('#manual');m.hidden=!m.hidden;if(!m.hidden){$('#mArtist').focus();m.scrollIntoView({block:'center',behavior:'smooth'})}};
+$('#mAdd').onclick=manualAdd;
+$('#wishRow').onclick=()=>{genre='♡';renderShelf();goTab('shelf')};
 /* ---------- темы ---------- */
 function setTheme(t){
   theme=t;
@@ -782,8 +863,8 @@ const APP_URL=OWN_HOST?location.origin+location.pathname:'https://claude.ai/arti
 const recUrl=r=>APP_URL+'#r='+code(r);
 let pendingPhoto=null;
 function save(){try{localStorage.setItem('vv-records',JSON.stringify(records))}catch(e){toast('Не хватает места для сохранения')}}
-// уменьшаем своё фото конверта до ~320px, чтобы хранить его в коллекции
-function shrink(img){return new Promise(res=>{const go=()=>{const k=320/Math.max(img.naturalWidth,img.naturalHeight),c=document.createElement('canvas');c.width=img.naturalWidth*k;c.height=img.naturalHeight*k;c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.75))};img.complete?go():img.onload=go})}
+// уменьшаем своё фото конверта до ~420px, чтобы хранить его в коллекции
+function shrink(img){return new Promise(res=>{const go=()=>{const k=Math.min(1,420/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=img.naturalWidth*k;c.height=img.naturalHeight*k;c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.75))};img.complete?go():img.onload=go})}
 function markTag(r,kind){r.tag={...(r.tag||{}),[kind]:new Date().toLocaleDateString('ru')};save();renderShelf()}
 function openByCode(c,mode='push'){const r=records.find(x=>code(x)===c);if(r){openRecord(r.id,mode);toast('🏷 '+r.title)}else toast('Этой пластинки нет на полке')}
 
@@ -830,6 +911,72 @@ let sheetRec=null;
 function closeTagSheet(){if(history.state?.sheet)history.back();else $('#tagBg').classList.remove('on')}
 $('#tagBg').onclick=e=>{if(e.target.id==='tagBg')closeTagSheet()};
 
+/* ---------- меню пластинки: долгое нажатие на полке или ⋯ в карточке ---------- */
+function setWish(r,on){r.wish=on;genre=on?'♡':'Все';save();renderShelf();toast(on?'Перенесено в список желаний ♡':'На полке ✓ Поздравляем с покупкой!')}
+function deleteRecord(r){
+  records=records.filter(x=>x!==r);save();renderShelf();toast('Удалено: '+r.title);
+}
+const coverInput=Object.assign(document.createElement('input'),{type:'file',accept:'image/*'});
+coverInput.onchange=()=>{
+  const f=coverInput.files[0],r=sheetRec;coverInput.value='';if(!f||!r)return;
+  const img=new Image();img.src=URL.createObjectURL(f);
+  shrink(img).then(d=>{r.img=d;save();renderShelf();toast('Обложка обновлена ✓');
+    if(curView==='detail'&&curId==r.id)openRecord(r.id,'none',{anim:false,keep:true,quiet:true})});
+};
+function openActions(id){
+  const r=records.find(x=>x.id==id);if(!r)return;
+  sheetRec=r;
+  const inCard=curView==='detail';
+  // меню — запись в истории: «Назад» на телефоне закрывает его
+  if(!$('#tagBg').classList.contains('on'))nav(inCard?{v:'detail',id:r.id,sheet:1}:{v:curView,sheet:1},'push');
+  $('#tagSheet').innerHTML=`<div class="grab"></div>
+  <div class="act-h"><div class="th">${coverHTML(r)}</div><div><b>${r.title}</b><small>${r.artist}${r.year?' · '+r.year:''}${r.wish?' · ♡ хочу купить':''}</small></div></div>
+  <div class="act">
+    ${inCard?'':'<button data-a="open"><i>💿</i>Открыть карточку</button>'}
+    <button data-a="wish"><i>${r.wish?'✓':'♡'}</i>${r.wish?'Купил — перенести в коллекцию':'Перенести в список желаний'}</button>
+    <button data-a="cover"><i>🖼</i>Сменить обложку (из галереи)</button>
+    ${r.wish?'':'<button data-a="tag"><i>🏷</i>Метка NFC / QR</button>'}
+    <button data-a="del" class="danger"><i>🗑</i>${r.wish?'Удалить из списка желаний':'Удалить из коллекции'}</button>
+  </div>
+  <button class="btn" style="width:100%;margin-top:10px" id="actClose">Отмена</button>`;
+  $('#actClose').onclick=closeTagSheet;
+  $('#tagSheet').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
+    const a=b.dataset.a;
+    if(a==='open'){$('#tagBg').classList.remove('on');openRecord(r.id,'replace')}
+    if(a==='wish'){setWish(r,!r.wish);closeTagSheet()}
+    if(a==='cover'){coverInput.click();closeTagSheet()}
+    if(a==='tag')openTagSheet(r);
+    if(a==='del'){
+      // удаление — в два нажатия, чтобы не стереть пластинку случайно
+      if(!b.classList.contains('sure')){b.classList.add('sure');b.innerHTML='<i>🗑</i>Точно удалить? Нажмите ещё раз';return}
+      deleteRecord(r);
+      if(inCard){$('#tagBg').classList.remove('on');goTab('shelf')}else closeTagSheet();
+    }
+  });
+  $('#tagBg').classList.add('on');
+}
+
+/* ---------- долгое нажатие: своё меню вместо меню браузера ---------- */
+let lpTimer=null,lpFired=false,lpXY=null;
+const lpTarget=el=>{const s=el.closest&&el.closest('.sleeve[data-id],.spine,.ritem[data-open]');return s&&!s.closest('.hero')?s:null};
+const lpOpen=t=>{clearTimeout(lpTimer);lpFired=true;if(navigator.vibrate)navigator.vibrate(12);openActions(t.dataset.id||t.dataset.open)};
+document.addEventListener('pointerdown',e=>{
+  lpFired=false;clearTimeout(lpTimer);
+  const t=lpTarget(e.target);if(!t||e.button>0)return;
+  lpXY=[e.clientX,e.clientY];lpTimer=setTimeout(()=>lpOpen(t),480);
+});
+document.addEventListener('pointermove',e=>{if(lpXY&&Math.hypot(e.clientX-lpXY[0],e.clientY-lpXY[1])>10)clearTimeout(lpTimer)});
+['pointerup','pointercancel'].forEach(n=>document.addEventListener(n,()=>clearTimeout(lpTimer)));
+document.addEventListener('scroll',()=>clearTimeout(lpTimer),true);
+// отпущенный после долгого нажатия палец не должен открывать карточку или закрывать меню
+document.addEventListener('click',e=>{if(lpFired){lpFired=false;e.stopPropagation();e.preventDefault()}},true);
+document.addEventListener('contextmenu',e=>{
+  if(e.target.closest('input,textarea'))return;
+  e.preventDefault();
+  const t=lpTarget(e.target);if(t&&!$('#tagBg').classList.contains('on'))lpOpen(t);
+});
+document.addEventListener('dragstart',e=>e.preventDefault());
+
 async function writeNFC(r,url,text){
   const ring=$('#ring'),st=$('#nfcStatus');
   ring.className='nfc-ring wait';ring.textContent='📡';st.textContent='Поднесите метку к телефону…';
@@ -853,7 +1000,7 @@ const route=(h,mode)=>{const m=(h||'').match(/r=(\w+)/);if(m)openByCode(m[1],mod
 // метку прочитали, когда приложение уже открыто: переход по #r=… уже добавил запись в историю — занимаем её
 window.addEventListener('hashchange',()=>{const h=location.hash;if(!/r=\w+/.test(h))return;depth++;history.replaceState(null,'',location.pathname+location.search);route(h,'replace')});
 
-try{const s=JSON.parse(localStorage.getItem('vv-records'));if(Array.isArray(s)&&s.length)records=s}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('vv-records'));if(Array.isArray(s))records=s}catch(e){} // пустая полка тоже сохраняется — примеры не возвращаются
 let saved='strict';try{saved=localStorage.getItem('vv-theme')||'strict'}catch(e){}
 setTheme(saved);
 const startHash=location.hash;

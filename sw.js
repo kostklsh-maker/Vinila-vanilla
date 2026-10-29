@@ -1,9 +1,16 @@
 // Винила-ванила: приложение открывается и без сети.
-// Сначала всегда берём свежую версию из интернета (обновления на GitHub видны сразу),
-// а сохранённую копию показываем только когда сети нет.
-const CACHE = 'vv-app-v1';
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+// При установке файлы приложения сразу сохраняются на телефоне.
+// Дальше сначала берём свежую версию из интернета (обновления на GitHub видны сразу),
+// а сохранённую копию показываем, когда сети нет.
+const CACHE = 'vv-app-v2';
+const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon.svg'];
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).catch(() => {}));
+});
+self.addEventListener('activate', e => e.waitUntil(
+  caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())
+));
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
