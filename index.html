@@ -185,7 +185,7 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
 .src{font-size:11px;color:var(--muted);margin-top:8px}
 /* add */
 .cam{margin:0 20px 12px;height:240px;border-radius:24px;background:var(--panel2);border:1px dashed var(--muted);position:relative;overflow:hidden;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:13px;cursor:pointer}
-.cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .cam .frame{position:absolute;inset:40px;border:2px solid var(--accent);border-radius:8px;box-shadow:0 0 0 999px #0007}
 .cam .scan{position:absolute;left:40px;right:40px;height:2px;background:var(--accent);box-shadow:0 0 14px var(--accent);top:40px;animation:scan 1.6s ease-in-out infinite alternate;display:none}
 .cam.scanning .scan{display:block}
@@ -193,6 +193,24 @@ body{background:var(--body-bg);color:var(--ink);font-family:var(--bfont);transit
 .scanst{margin:-2px 20px 12px;padding:12px 14px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);font-size:13px;line-height:1.45;display:flex;gap:10px;align-items:flex-start}
 .scanst .spinner{flex:none;width:16px;height:16px;margin:1px 0 0}
 .scanst.ok{border-color:var(--accent)}
+.camview{position:absolute;inset:0;z-index:80;background:#000;overflow:hidden}
+.camview[hidden]{display:none}
+.camview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.camview.flash::after{content:'';position:absolute;inset:0;background:#fff;opacity:.6}
+.camwin{position:absolute;left:50%;top:44%;width:min(84%,58vh);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:6px;box-shadow:0 0 0 100vmax #000a;pointer-events:none}
+.camwin i{position:absolute;width:30px;height:30px;border:3px solid var(--accent)}
+.camwin i:nth-child(1){left:-3px;top:-3px;border-right:0;border-bottom:0;border-radius:8px 0 0 0}
+.camwin i:nth-child(2){right:-3px;top:-3px;border-left:0;border-bottom:0;border-radius:0 8px 0 0}
+.camwin i:nth-child(3){left:-3px;bottom:-3px;border-right:0;border-top:0;border-radius:0 0 0 8px}
+.camwin i:nth-child(4){right:-3px;bottom:-3px;border-left:0;border-top:0;border-radius:0 0 8px 0}
+.camtop{position:absolute;top:44px;left:16px;right:16px;display:flex;justify-content:space-between}
+.camtop button,.cambar>button:first-child{width:44px;height:44px;border-radius:50%;border:0;background:#0008;color:#fff;font-size:18px}
+#camTorch.on{background:var(--accent);color:var(--onaccent)}
+.camhint{position:absolute;left:20px;right:20px;bottom:128px;text-align:center;color:#fff;font-size:13px;line-height:1.45;text-shadow:0 1px 3px #000}
+.cambar{position:absolute;left:0;right:0;bottom:34px;display:flex;justify-content:space-around;align-items:center}
+.cambar>span{width:44px}
+.shutter{width:72px;height:72px;border-radius:50%;border:4px solid #fff;background:var(--accent);box-shadow:0 0 0 3px #0006}
+.shutter:active{transform:scale(.92)}
 .or{text-align:center;color:var(--muted);font-size:12px;margin:4px 0 12px}
 .res{padding:0 20px}
 .ritem{display:flex;gap:12px;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;align-items:center;cursor:pointer}
@@ -376,6 +394,13 @@ details.adv[open] summary::after{content:'▴'}
     <div class="notch"></div>
     <div class="toast" id="toast"></div>
     <div class="sheet-bg" id="tagBg"><div class="sheet" id="tagSheet"></div></div>
+    <div class="camview" id="camView" hidden>
+      <video id="camVideo" playsinline muted autoplay></video>
+      <div class="camwin" id="camWin"><i></i><i></i><i></i><i></i></div>
+      <div class="camtop"><button id="camClose" aria-label="Закрыть">✕</button><button id="camTorch" aria-label="Фонарик" hidden>🔦</button></div>
+      <div class="camhint">Поместите обложку в рамку целиком, без бликов.<br>Или наведите на штрихкод на обороте.</div>
+      <div class="cambar"><button id="camGal" aria-label="Из галереи">🖼</button><button class="shutter" id="camShot" aria-label="Снять"></button><span></span></div>
+    </div>
     <div class="screen" id="screen">
 
       <!-- SHELF -->
@@ -419,7 +444,7 @@ details.adv[open] summary::after{content:'▴'}
           <div class="scan"></div>
         </label>
         <div class="pick">
-          <label class="btn" for="file">📷 Камера</label>
+          <button class="btn" id="camBtn">📷 Камера</button>
           <label class="btn" for="gal">🖼 Из галереи</label>
           <input type="file" accept="image/*" capture="environment" id="file" hidden>
           <input type="file" accept="image/*" id="gal" hidden>
@@ -532,7 +557,16 @@ const EN={
  'Фото обложки':'Cover photo','с камеры или из галереи —':'from the camera or gallery —','приложение узнает пластинку по надписям или штрихкоду':'the app recognises the record by its text or barcode',
  'Ищу штрихкод…':'Looking for a barcode…','Штрихкод {c} — ищу издание…':'Barcode {c}, looking up the edition…',
  '✓ Нашёл по штрихкоду {c}. Нажмите на своё издание ниже.':'✓ Found by barcode {c}. Tap your edition below.',
- 'Читаю надписи на обложке… В первый раз — до минуты: загружается словарь.':'Reading the text on the cover… The first time takes up to a minute while the dictionary loads.',
+ 'Читаю надписи на обложке… В первый раз загружается модель распознавания (~20 МБ), дальше быстро.':'Reading the text on the cover… The first time the recognition model (~20 MB) is downloaded, after that it is quick.',
+ 'Не загрузилась модель распознавания — нужен интернет. Впишите артиста и альбом в поиск ниже.':'The recognition model didn’t load, an internet connection is needed. Type the artist and album in the search below.',
+ 'Прочитал «{q}», но в базе такой пластинки не нашёл. Поправьте запрос ниже и нажмите «Найти».':'Read “{q}” but couldn’t find this record in the database. Edit the search below and tap “Find”.',
+ 'Штрихкод {c} в базе не нашёлся. Сфотографируйте лицевую сторону обложки или впишите артиста и альбом.':'Barcode {c} isn’t in the database. Photograph the front of the cover or type the artist and album.',
+ 'Поместите обложку в рамку целиком, без бликов.':'Fit the whole cover inside the frame, avoiding glare.',
+ 'Или наведите на штрихкод на обороте.':'Or point at the barcode on the back.',
+ 'Нет доступа к камере — открываю обычную':'No camera access, opening the standard camera',
+ 'Фонарик':'Torch',
+ 'Снять':'Take photo',
+ 'Из галереи':'From gallery',
  'Прочитал «{q}» — ищу в базе…':'Read “{q}”, searching the database…',
  '✓ Прочитал «{q}». Нажмите на своё издание ниже — или поправьте запрос.':'✓ Read “{q}”. Tap your edition below, or edit the search.',
  'Надписи прочитал, но в базе такой пластинки не нашёл. Впишите артиста и альбом в поиск ниже.':'I read the text but couldn’t find this record in the database. Type the artist and album in the search below.',
@@ -781,6 +815,7 @@ window.addEventListener('popstate',e=>{
   if(e.state===null&&/r=\w+/.test(location.hash))return; // переход по ссылке метки — обработает hashchange
   const s=e.state||{v:'shelf',d:0},sheetWasOpen=$('#tagBg').classList.contains('on');
   depth=s.d||0;
+  if(!$('#camView').hidden&&!s.cam){stopCam();if(s.v===curView)return} // «Назад» закрывает камеру
   if(!s.sheet)$('#tagBg').classList.remove('on');
   if(sheetWasOpen&&!s.sheet&&s.v===curView&&s.v!=='detail')return; // закрыли меню на полке или в поиске — экран не трогаем
   if(s.v==='detail'){
@@ -967,27 +1002,57 @@ function markPlaying(){document.querySelectorAll('.trk').forEach(el=>{const tr=c
 
 /* ---------- add: MusicBrainz ---------- */
 const toks=s=>(s||'').toLowerCase().replace(/ё/g,'е').match(/[\p{L}\p{N}]+/gu)||[];
-// насколько издание совпадает с прочитанными на обложке словами: артист + название, винил выше
-function coverScore(x,words){
-  const title=toks(x.title),have=new Set([...title,...toks((x['artist-credit']||[]).map(a=>a.name).join(' '))]);
-  let s=0;words.forEach(w=>{if(have.has(w))s+=w.length>2?2:1});
-  s-=title.filter(w=>!words.includes(w)).length*.5;
+// распознавание ошибается на букву-две («КРОЗИ» вместо «КРОВИ») — слова сравниваем с допуском
+const lev=(a,b)=>{let p=Array.from({length:b.length+1},(_,j)=>j);for(let i=1;i<=a.length;i++){const q=[i];for(let j=1;j<=b.length;j++)q[j]=Math.min(p[j]+1,q[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=q}return p[b.length]};
+const near=(w,t)=>w===t||(w.length>=4&&t.length>=4&&(t.startsWith(w)||lev(w,t)<=(w.length>=7?2:1)));
+const STOP=new Set(['the','of','a','an','and','in','on','to','и','в','на','с','по']);
+// насколько издание похоже на прочитанное: слова в артисте и названии, самая крупная надпись — с бонусом, винил выше
+function coverScore(x,words,main=[]){
+  const title=toks(x.title),all=[...title,...toks((x['artist-credit']||[]).map(a=>a.name).join(' '))];
+  const hit=w=>all.some(t=>near(w,t));
+  let s=0;words.forEach(w=>{if(hit(w))s+=STOP.has(w)?.5:w.length>2?2:1});
+  s-=title.filter(t=>!words.some(w=>near(w,t))).length*.5;
+  const m=main.filter(w=>!STOP.has(w));if(m.length)s+=4*m.filter(hit).length/m.length;
   if((x.media||[]).some(m=>/vinyl/i.test(m.format||'')))s+=1;
   return s;
 }
-// words — слова с фото: тогда берём 100 изданий и сами ставим наверх самые похожие
-async function mbSearch(q,words){
+// MusicBrainz отвечает 503, если спрашивать чаще раза в секунду, — тогда ждём и повторяем
+async function mbFind(q,limit){
+  for(let i=0;;i++){
+    const r=await fetch(`https://musicbrainz.org/ws/2/release/?query=${encodeURIComponent(q)}&fmt=json&limit=${limit}`);
+    if(r.ok)return r.json();
+    if(r.status!==503||i>=2)throw new Error(r.status);
+    await wait(1500*(i+1));
+  }
+}
+function renderReleases(rel,count){
+  $('#hint').textContent=rel.length?`Найдено ${count}. Выберите своё издание:`:'Ничего не найдено. Попробуйте иначе.';
+  $('#res').innerHTML=rel.map(x=>{const fmtv=(x.media||[]).map(m=>m.format).filter(Boolean).join(', ');
+    return `<div class="ritem" data-mb="${x.id}"><div class="th"><img src="https://coverartarchive.org/release/${x.id}/front-250" onerror="this.replaceWith(document.createTextNode('💿'))"></div><div><b>${esc(x.title)}</b><small>${esc((x['artist-credit']||[]).map(a=>a.name).join(', '))} · ${(x.date||'').slice(0,4)||'—'} · ${x.country||''} ${fmtv?'· '+fmtv:''}</small></div><span class="plus">＋</span></div>`}).join('');
+}
+async function mbSearch(q){
   $('#res').innerHTML='<div class="spinner"></div>';$('#hint').textContent='Ищу в MusicBrainz…';
+  try{const d=await mbFind(q,8);const rel=d.releases||[];renderReleases(rel,d.count);return rel.length}
+  catch(e){$('#res').innerHTML='';$('#hint').textContent='Нет связи с MusicBrainz. Проверьте интернет.';return -1}
+}
+// поиск по словам с обложки: сначала слова должны найтись и в артисте, и в названии; если не вышло — по всем полям.
+// Берём по 100 изданий и сами ставим наверх самые похожие
+async function mbSearchCover(words,main,alive){
+  $('#res').innerHTML='<div class="spinner"></div>';$('#hint').textContent='Ищу в MusicBrainz…';
+  const fz=ws=>ws.map(w=>w.length>=4?w+'~':w).join(' '),W=fz(words),M=fz(main.filter(w=>!STOP.has(w))),seen=new Map();
   try{
-    const r=await fetch(`https://musicbrainz.org/ws/2/release/?query=${encodeURIComponent(q)}&fmt=json&limit=${words?100:8}`);
-    const d=await r.json();
-    let rel=(d.releases||[]);
-    if(words)rel=rel.map(x=>[x,coverScore(x,words)]).sort((a,b)=>b[1]-a[1]).map(a=>a[0]).slice(0,8);
-    $('#hint').textContent=rel.length?`Найдено ${words?rel.length:d.count}. Выберите своё издание:`:'Ничего не найдено. Попробуйте иначе.';
-    $('#res').innerHTML=rel.map(x=>{const fmtv=(x.media||[]).map(m=>m.format).filter(Boolean).join(', ');
-      return `<div class="ritem" data-mb="${x.id}"><div class="th"><img src="https://coverartarchive.org/release/${x.id}/front-250" onerror="this.replaceWith(document.createTextNode('💿'))"></div><div><b>${x.title}</b><small>${(x['artist-credit']||[]).map(a=>a.name).join(', ')} · ${(x.date||'').slice(0,4)||'—'} · ${x.country||''} ${fmtv?'· '+fmtv:''}</small></div><span class="plus">＋</span></div>`}).join('');
-    return rel.length;
-  }catch(e){$('#res').innerHTML='';$('#hint').textContent='Нет связи с MusicBrainz. Проверьте интернет.';return -1}
+    // 1) слова и в артисте, и в названии; 2) главная надпись как название альбома; 3) если всё ещё мимо — по всем полям
+    for(const [i,q] of [`artist:(${W}) AND release:(${W})`,M&&`release:(${M})`,W].entries()){
+      if(!q)continue;
+      if(i){if(i===2&&seen.size&&Math.max(...seen.values())>=6)break;await wait(1100);if(!alive())return 0} // MusicBrainz — не чаще раза в секунду
+      const d=await mbFind(q,100);
+      (d.releases||[]).forEach(x=>{if(!seen.has(x))seen.set(x,coverScore(x,words,main))});
+    }
+  }catch(e){if(!seen.size){$('#res').innerHTML='';$('#hint').textContent='Нет связи с MusicBrainz. Проверьте интернет.';return -1}}
+  const byId=new Map();[...seen].forEach(([x,s])=>{if(!byId.has(x.id)||byId.get(x.id)[1]<s)byId.set(x.id,[x,s])});
+  const rel=[...byId.values()].filter(a=>a[1]>=2).sort((a,b)=>b[1]-a[1]).slice(0,8).map(a=>a[0]);
+  renderReleases(rel,rel.length);
+  return rel.length;
 }
 
 /* ---------- распознавание фото: штрихкод → точное издание, иначе надписи на обложке → поиск ---------- */
@@ -1012,32 +1077,101 @@ async function readBarcode(file){
 }
 // в базе штрихкод UPC иногда записан с ведущим нулём, как EAN-13
 const barcodeQuery=c=>c.length===12?`barcode:${c} OR barcode:0${c}`:`barcode:${c}`;
-// надписи на обложке читает Tesseract прямо в телефоне (русский и английский); самые крупные строки — обычно артист и альбом
-let ocrWorker=null;
-// снимок ~1600px по длинной стороне (мелкие надписи так читаются лучше), ч/б, при нужде негатив и поворот
-function ocrCanvas(img,invert,deg=0){
-  const k=1600/Math.max(img.naturalWidth,img.naturalHeight),W=img.naturalWidth*k,H=img.naturalHeight*k;
-  const a=deg*Math.PI/180,cs=Math.abs(Math.cos(a)),sn=Math.abs(Math.sin(a)),c=document.createElement('canvas');
-  c.width=Math.ceil(W*cs+H*sn);c.height=Math.ceil(W*sn+H*cs);
-  const x=c.getContext('2d');x.fillStyle=invert?'#000':'#fff';x.fillRect(0,0,c.width,c.height);
-  x.filter=`grayscale(1) contrast(1.4)${invert?' invert(1)':''}`;x.translate(c.width/2,c.height/2);x.rotate(a);x.drawImage(img,-W/2,-H/2,W,H);return c;
+// надписи на обложке читает PaddleOCR прямо в телефоне: находит строки (даже наискосок), выравнивает и читает
+// по-русски и по-английски. Модели лежат рядом с приложением (models/), движок onnxruntime — с jsDelivr
+const ORT='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/';
+let ppReady=null;
+function ppLoad(){
+  return ppReady||(ppReady=(async()=>{
+    await loadScript(ORT+'ort.wasm.min.js');
+    ort.env.wasm.wasmPaths=ORT;ort.env.wasm.numThreads=1;
+    const [det,rec,dict]=await Promise.all([ort.InferenceSession.create('models/det.onnx'),ort.InferenceSession.create('models/rec_eslav.onnx'),fetch('models/rec_eslav.txt').then(r=>{if(!r.ok)throw new Error(r.status);return r.text()})]);
+    return {det,rec,dict:dict.split(/\r?\n/).filter((l,i,a)=>i<a.length-1||l)};
+  })().catch(e=>{ppReady=null;throw e}));
 }
-async function readCoverText(img,alive=()=>true){
-  await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js');
-  ocrWorker=ocrWorker||await Tesseract.createWorker(['rus','eng']);
+const PP={
+  // билинейная выборка пикселя картинки {w,h,d:RGBA}
+  px(img,x,y,o){
+    x=x<0?0:x>img.w-1?img.w-1:x;y=y<0?0:y>img.h-1?img.h-1:y;
+    const x0=x|0,y0=y|0,x1=Math.min(img.w-1,x0+1),y1=Math.min(img.h-1,y0+1),fx=x-x0,fy=y-y0,d=img.d,a=(y0*img.w+x0)*4,b=(y0*img.w+x1)*4,e=(y1*img.w+x0)*4,f=(y1*img.w+x1)*4;
+    for(let c=0;c<3;c++)o[c]=(d[a+c]*(1-fx)+d[b+c]*fx)*(1-fy)+(d[e+c]*(1-fx)+d[f+c]*fx)*fy;
+    return o;
+  },
+  // поиск строк: длинная сторона ~960, кратно 32, нормализация как при обучении модели
+  detInput(img){
+    const k=960/Math.max(img.w,img.h),W=Math.max(32,Math.round(img.w*k/32)*32),H=Math.max(32,Math.round(img.h*k/32)*32);
+    const t=new Float32Array(3*W*H),m=[.485,.456,.406],s=[.229,.224,.225],o=[0,0,0];
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){PP.px(img,(x+.5)*img.w/W-.5,(y+.5)*img.h/H-.5,o);const i=y*W+x;for(let c=0;c<3;c++)t[c*W*H+i]=(o[c]/255-m[c])/s[c]}
+    return {t,W,H};
+  },
+  // карта вероятностей → повёрнутые прямоугольники строк в координатах картинки
+  boxes(prob,W,H,img){
+    const lab=new Uint8Array(W*H),out=[],sx=img.w/W,sy=img.h/H;
+    for(let p=0;p<W*H;p++){
+      if(prob[p]<=.3||lab[p])continue;
+      const st=[p],pts=[];lab[p]=1;let sum=0;
+      while(st.length){const q=st.pop();pts.push(q);sum+=prob[q];const x=q%W,y=(q-x)/W;
+        for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;const n=ny*W+nx;if(!lab[n]&&prob[n]>.3){lab[n]=1;st.push(n)}}}
+      if(pts.length<12||sum/pts.length<.5)continue;
+      // главная ось пятна — направление строки
+      let mx=0,my=0;for(const q of pts){mx+=(q%W)*sx;my+=((q/W)|0)*sy}mx/=pts.length;my/=pts.length;
+      let cxx=0,cyy=0,cxy=0;for(const q of pts){const dx=(q%W)*sx-mx,dy=((q/W)|0)*sy-my;cxx+=dx*dx;cyy+=dy*dy;cxy+=dx*dy}
+      const a=.5*Math.atan2(2*cxy,cxx-cyy),ux=Math.cos(a),uy=Math.sin(a);
+      let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;
+      for(const q of pts){const dx=(q%W)*sx-mx,dy=((q/W)|0)*sy-my,u=dx*ux+dy*uy,v=dy*ux-dx*uy;if(u<u0)u0=u;if(u>u1)u1=u;if(v<v0)v0=v;if(v>v1)v1=v}
+      let w=u1-u0+sx,h=v1-v0+sy;if(Math.min(w,h)<4)continue;
+      const dd=w*h*1.5/(2*(w+h));w+=2*dd;h+=2*dd; // модель обводит строку чуть уже — расширяем
+      const cu=(u0+u1)/2,cv=(v0+v1)/2;
+      out.push({cx:mx+ux*cu-uy*cv,cy:my+uy*cu+ux*cv,ux,uy,w,h});
+    }
+    return out;
+  },
+  // вырезаем строку по прямоугольнику и кладём её ровно, высота 48
+  recInput(img,b,flip){
+    const H=48,W=Math.max(16,Math.min(1280,Math.round(H*b.w/b.h))),t=new Float32Array(3*H*W),s=flip?-1:1,o=[0,0,0];
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const u=s*((x+.5)/W-.5)*b.w,v=s*((y+.5)/H-.5)*b.h,i=y*W+x;PP.px(img,b.cx+b.ux*u-b.uy*v,b.cy+b.uy*u+b.ux*v,o);
+      for(let c=0;c<3;c++)t[c*H*W+i]=o[c]/127.5-1;
+    }
+    return {t,W};
+  },
+  // CTC: 0 — пусто, дальше словарь, последний класс — пробел
+  ctc(out,T,C,dict){
+    let s='',prev=-1,conf=0,n=0;
+    for(let i=0;i<T;i++){let bi=0,bv=-1e9;for(let c=0;c<C;c++){const v=out[i*C+c];if(v>bv){bv=v;bi=c}}
+      if(bi&&bi!==prev){s+=bi-1<dict.length?dict[bi-1]:' ';conf+=bv;n++}prev=bi}
+    return {text:s.trim(),conf:n?conf/n:0};
+  },
+};
+function imgPixels(img,max=1600){
+  const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');
+  c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+  const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,c.width,c.height);
+  return {w:c.width,h:c.height,d:x.getImageData(0,0,c.width,c.height).data};
+}
+// строки с обложки: [{text,conf,h}], крупные и уверенные — первыми
+async function readCoverText(img){
+  const {det,rec,dict}=await ppLoad(),im=imgPixels(img);
+  const di=PP.detInput(im),o=await det.run({[det.inputNames[0]]:new ort.Tensor('float32',di.t,[1,3,di.H,di.W])});
   const lines=[];
-  // светлые буквы на тёмной обложке читаются только в негативе; надписи наискосок — после поворота
-  for(const [invert,deg] of [[false,0],[true,0],[false,35],[false,-35],[true,35],[true,-35],[false,20],[false,-20]]){
-    if(!alive())break;
-    const {data}=await ocrWorker.recognize(ocrCanvas(img,invert,deg),{},{blocks:true});
-    (data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(l=>{
-      const w=(l.words||[]).filter(w=>w.confidence>=(w.text.length<3?80:60)).map(w=>w.text.replace(/[^\p{L}\p{N}']/gu,'')).filter(w=>/\p{L}{2}|\d{2}/u.test(w));
-      if(w.length)lines.push({t:w.slice(0,6).join(' '),h:l.bbox.y1-l.bbox.y0});
-    })));
-    if(new Set(toks(lines.map(l=>l.t).join(' '))).size>=2)break;
+  for(const b of PP.boxes(o[det.outputNames[0]].data,di.W,di.H,im)){
+    let best=null;
+    // вертикальную строку можно прочитать в обе стороны — берём вариант увереннее
+    for(const flip of Math.abs(b.uy)>.7?[false,true]:[false]){
+      const ri=PP.recInput(im,b,flip),r=(await rec.run({[rec.inputNames[0]]:new ort.Tensor('float32',ri.t,[1,3,48,ri.W])}))[rec.outputNames[0]];
+      const res=PP.ctc(r.data,r.dims[1],r.dims[2],dict);if(!best||res.conf>best.conf)best=res;
+    }
+    if(best.conf>=.35&&(best.text.match(/\p{L}/gu)||[]).length>=2)lines.push({...best,h:b.h});
   }
-  lines.sort((a,b)=>b.h-a.h);
-  return [...new Set(lines.map(l=>l.t))].slice(0,3);
+  // главная строка — крупная и прочитанная уверенно (фигурный логотип читается плохо и не должен вести поиск)
+  const key=l=>l.h*l.conf*(l.conf>=.7?1:.4);
+  return lines.sort((a,b)=>key(b)-key(a));
+}
+// слова для поиска: из уверенных строк — все, из сомнительных — только длинные; цифры (годы, номера) не помогают
+function coverWords(lines){
+  const words=[];
+  lines.forEach(l=>toks(l.text).forEach(w=>{if(/^\d+$/.test(w)||w.length<2||(l.conf<.6&&w.length<5))return;if(!words.includes(w))words.push(w)}));
+  return words.slice(0,14);
 }
 let scanRun=0;
 async function recognizeCover(file,img){
@@ -1050,25 +1184,71 @@ async function recognizeCover(file,img){
     if(await mbSearch(barcodeQuery(bc))>0)return alive()&&found(tr('✓ Нашёл по штрихкоду {c}. Нажмите на своё издание ниже.',{c:bc}));
     if(!alive())return;await wait(1100);
   }
-  scanStatus(tr('Читаю надписи на обложке… В первый раз — до минуты: загружается словарь.'),'busy');
+  scanStatus(tr('Читаю надписи на обложке… В первый раз загружается модель распознавания (~20 МБ), дальше быстро.'),'busy');
   await new Promise(r=>img.complete?r():img.onload=r);
-  let lines=[];try{lines=await readCoverText(img,alive)}catch(e){}
+  let lines=[],err=false;try{lines=await readCoverText(img)}catch(e){err=true}
   if(!alive())return;
-  const text=lines.join(' '),words=[...new Set(toks(text))],w=words.join(' ');
-  // сначала слова должны найтись и в артисте, и в названии; если на обложке только название — ищем по всему
-  const tries=w?[`artist:(${w}) AND release:(${w})`,w]:[];
-  if(w)$('#mbq').value=text;
-  for(const [i,q] of tries.entries()){
-    if(i)await wait(1100); // MusicBrainz принимает не чаще раза в секунду
-    if(!alive())return;
+  const words=coverWords(lines),text=lines.filter(l=>l.conf>=.5).map(l=>l.text).join(' · ')||lines.map(l=>l.text).join(' · ');
+  if(words.length){
+    $('#mbq').value=lines.map(l=>l.text).join(' ');
     scanStatus(tr('Прочитал «{q}» — ищу в базе…',{q:esc(text)}),'busy');
-    const n=await mbSearch(q,words);if(!alive())return;
+    const n=await mbSearchCover(words,toks(lines[0].text),alive);if(!alive())return;
     if(n>0)return found(tr('✓ Прочитал «{q}». Нажмите на своё издание ниже — или поправьте запрос.',{q:esc(text)}));
-    if(n<0)break;
   }
-  cam.classList.remove('scanning');$('#res').innerHTML='';$('#mbq').value='';
-  scanStatus(tr(lines.length?'Надписи прочитал, но в базе такой пластинки не нашёл. Впишите артиста и альбом в поиск ниже.':'Не получилось прочитать надписи. Впишите артиста и альбом в поиск ниже — или сфотографируйте оборот конверта со штрихкодом.'));
+  cam.classList.remove('scanning');$('#res').innerHTML='';
+  scanStatus(err?tr('Не загрузилась модель распознавания — нужен интернет. Впишите артиста и альбом в поиск ниже.')
+    :words.length?tr('Прочитал «{q}», но в базе такой пластинки не нашёл. Поправьте запрос ниже и нажмите «Найти».',{q:esc(text)})
+    :tr('Не получилось прочитать надписи. Впишите артиста и альбом в поиск ниже — или сфотографируйте оборот конверта со штрихкодом.'));
 }
+
+/* ---------- своя камера с рамкой: видно, что именно попадёт в кадр ---------- */
+let camStream=null,camTimer=0;
+async function openCam(){
+  if(!navigator.mediaDevices?.getUserMedia){$('#file').click();return}
+  try{camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:2560},height:{ideal:2560}},audio:false})}
+  catch(e){toast('Нет доступа к камере — открываю обычную');$('#file').click();return}
+  const v=$('#camVideo');v.srcObject=camStream;$('#camView').hidden=false;
+  nav({v:curView,cam:1},'push');
+  try{await v.play()}catch(e){}
+  const tr0=camStream.getVideoTracks()[0],caps=tr0.getCapabilities?.()||{};
+  $('#camTorch').hidden=!caps.torch;$('#camTorch').classList.remove('on');
+  // штрихкод на обороте ловим прямо в видео — снимать не нужно
+  if('BarcodeDetector' in window)BarcodeDetector.getSupportedFormats().then(f=>{
+    if(!f.includes('ean_13')||!camStream)return;
+    const bd=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});
+    const tick=async()=>{if(!camStream)return;try{const r=await bd.detect(v);if(r[0]&&camStream){closeCam();onBarcode(r[0].rawValue);return}}catch(e){}camTimer=setTimeout(tick,400)};
+    camTimer=setTimeout(tick,600);
+  }).catch(()=>{});
+}
+function stopCam(){
+  clearTimeout(camTimer);camStream?.getTracks().forEach(t=>t.stop());camStream=null;
+  $('#camVideo').srcObject=null;$('#camView').hidden=true;
+}
+function closeCam(){if(history.state?.cam)history.back();else stopCam()}
+// снимок только того, что внутри рамки (с небольшим запасом по краям), в полном разрешении камеры
+function shootCam(){
+  const v=$('#camVideo'),vr=v.getBoundingClientRect(),wr=$('#camWin').getBoundingClientRect();
+  if(!v.videoWidth)return;
+  const s=Math.max(vr.width/v.videoWidth,vr.height/v.videoHeight),ox=(vr.width-v.videoWidth*s)/2,oy=(vr.height-v.videoHeight*s)/2,pad=wr.width*.04;
+  let sx=(wr.left-pad-vr.left-ox)/s,sy=(wr.top-pad-vr.top-oy)/s,sw=(wr.width+2*pad)/s,sh=(wr.height+2*pad)/s;
+  sx=Math.max(0,sx);sy=Math.max(0,sy);sw=Math.min(sw,v.videoWidth-sx);sh=Math.min(sh,v.videoHeight-sy);
+  const k=Math.min(1,1600/Math.max(sw,sh)),c=document.createElement('canvas');c.width=Math.round(sw*k);c.height=Math.round(sh*k);
+  c.getContext('2d').drawImage(v,sx,sy,sw,sh,0,0,c.width,c.height);
+  $('#camView').classList.add('flash');setTimeout(()=>$('#camView').classList.remove('flash'),200);
+  c.toBlob(b=>{closeCam();if(b)handlePhoto(new File([b],'cover.jpg',{type:'image/jpeg'}))},'image/jpeg',.92);
+}
+async function onBarcode(code){
+  const run=++scanRun,alive=()=>run===scanRun&&curView==='add';
+  $('#cam').classList.add('scanning');scanStatus(tr('Штрихкод {c} — ищу издание…',{c:code}),'busy');$('#mbq').value=code;
+  const n=await mbSearch(barcodeQuery(code));if(!alive())return;$('#cam').classList.remove('scanning');
+  scanStatus(n>0?tr('✓ Нашёл по штрихкоду {c}. Нажмите на своё издание ниже.',{c:code}):tr('Штрихкод {c} в базе не нашёлся. Сфотографируйте лицевую сторону обложки или впишите артиста и альбом.',{c:code}),n>0?'ok':'');
+  $('#scanSt').scrollIntoView({block:'start',behavior:'smooth'});
+}
+$('#camBtn').onclick=openCam;
+$('#camShot').onclick=shootCam;
+$('#camClose').onclick=closeCam;
+$('#camGal').onclick=()=>{closeCam();$('#gal').click()};
+$('#camTorch').onclick=async e=>{const b=e.currentTarget,on=!b.classList.contains('on');try{await camStream.getVideoTracks()[0].applyConstraints({advanced:[{torch:on}]});b.classList.toggle('on',on)}catch(err){}};
 async function mbAdd(id,el){
   el.style.opacity=.5;
   try{
@@ -1082,7 +1262,7 @@ async function mbAdd(id,el){
     // номер издания в MusicBrainz и, если есть, на Discogs — по нему ищется рыночная цена
     rec.mbid=id;
     const dm=((d.relations||[]).find(x=>x.type==='discogs')?.url?.resource||'').match(/release\/(\d+)/);if(dm)rec.dg=+dm[1];
-    if(pendingPhoto)rec.photo=pendingPhoto;
+    if(pendingPhoto){rec.photo=pendingPhoto;if(d['cover-art-archive']?.front===false)rec.img=pendingPhoto} // у издания нет картинки — обложкой станет ваше фото
     addRecord(rec);
   }catch(e){el.style.opacity=1;toast('Ошибка загрузки')}
 }
@@ -1137,13 +1317,14 @@ $('#ytKey').value=getKey();
 $('#ytSetup').onclick=()=>{goTab('prof');$('#adv').open=true;$('#ytKey').focus()};
 $('#ytSave').onclick=()=>{try{localStorage.setItem('vv-ytkey',$('#ytKey').value.trim())}catch(e){}toast($('#ytKey').value.trim()?'Ключ сохранён — полные треки включены':'Ключ удалён')};
 // фото с камеры или из галереи прикрепляется к пластинке, которую добавите следом, и сразу распознаётся
-const onPhoto=e=>{
-  const f=e.target.files[0];if(!f)return;const cam=$('#cam');
+function handlePhoto(f){
+  const cam=$('#cam');
   cam.querySelector('img')?.remove();const img=new Image();img.src=URL.createObjectURL(f);cam.prepend(img);cam.classList.add('has');
   shrink(img).then(d=>pendingPhoto=d);
   $('#hint').textContent='Фото прикреплено ✓ Найдите эту пластинку в базе — или добавьте вручную, тогда фото станет обложкой.';
   recognizeCover(f,img);
-};
+}
+const onPhoto=e=>{const f=e.target.files[0];if(f)handlePhoto(f)};
 $('#file').onchange=onPhoto;$('#gal').onchange=onPhoto;
 $('#manualToggle').onclick=()=>{const m=$('#manual');m.hidden=!m.hidden;if(!m.hidden){$('#mArtist').focus();m.scrollIntoView({block:'center',behavior:'smooth'})}};
 $('#mAdd').onclick=manualAdd;
@@ -1305,7 +1486,7 @@ document.addEventListener('contextmenu',e=>{
 document.addEventListener('dragstart',e=>e.preventDefault());
 
 /* ---------- профиль ---------- */
-const VERSION='2026.10.29b · RU/EN';
+const VERSION='2026.11.02 · RU/EN';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const plural=(n,a,b,c)=>{if(lang==='en')return tr(n===1?a:c);const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c};
 const CUR={EUR:'€',USD:'$',RUB:'₽',ILS:'₪',GBP:'£'};
