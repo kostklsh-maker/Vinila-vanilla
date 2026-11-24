@@ -33,6 +33,30 @@
   window.__fit=fit;
   // Chrome сообщает, что приложение можно установить — запоминаем, чтобы показать свою кнопку «Установить»
   addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__bip=e;if(window.updateInstallBar)updateInstallBar()});
+  // тема — сразу, до остального кода: даже если что-то ниже не загрузится, оформление будет новым
+  try{var th=localStorage.getItem('vv-theme2')||'carpet';if(th!=='strict')de.dataset.theme=th}catch(e){de.dataset.theme='carpet'}
+  // если на телефоне что-то сломается — внизу красная полоска с текстом ошибки, чтобы её можно было сфотографировать
+  addEventListener('error',function(e){
+    var m=(e.message||'')+(e.lineno?' · стр. '+e.lineno:'');if(!m)return;
+    var show=function(){var b=document.getElementById('errBar');if(!b){b=document.createElement('div');b.id='errBar';b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:999;background:#b3261e;color:#fff;font:12px/1.4 sans-serif;padding:8px 12px';document.body.appendChild(b)}b.textContent='⚠ '+m+' · версия '+(window.VV_VERSION||'?')};
+    document.body?show():addEventListener('DOMContentLoaded',show);
+  });
+  // обновления: проверяем новую версию при каждом открытии и возвращении в приложение, нашлась — перезагружаемся сами
+  if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)&&!/claude/.test(location.hostname)){
+    var hadCtrl=!!navigator.serviceWorker.controller,reloaded=false;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){if(!hadCtrl||reloaded)return;reloaded=true;location.reload()});
+    navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){
+      var check=function(){reg.update().catch(function(){})};
+      document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')check()});
+      setInterval(check,30*60*1000);
+    }).catch(function(){});
+  }
+  // «Проверить обновление»: стираем сохранённую копию приложения и грузим свежую (коллекция при этом не трогается)
+  window.vvHardUpdate=function(){
+    var regs=navigator.serviceWorker?navigator.serviceWorker.getRegistrations():Promise.resolve([]);
+    Promise.all([regs.then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}),window.caches?caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}):0])
+      .catch(function(){}).then(function(){location.replace(location.pathname+'?u='+Date.now())});
+  };
 })();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Inter:wght@400;500;600&family=Comfortaa:wght@500;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
@@ -761,7 +785,7 @@ Object.assign(EN,{"❖ Ковёр":"❖ Carpet",
  "Пропустить":"Skip",
  "📷 Сканировать первую пластинку":"📷 Scan your first record",
  "Сначала посмотрю полку":"Show me the shelf first",
- "✨ Показать приветствие":"✨ Show the welcome screens",
+ "✨ Показать приветствие":"✨ Show the welcome screens","🔄 Проверить обновление":"🔄 Check for updates","Обновляю…":"Updating…",
  "Не получилось открыть фото. Попробуйте снять ещё раз или выбрать другое.":"Couldn’t open the photo. Try taking it again or choose another one."});
 EN_RX.push([/^Источник: (.+)$/,'Source: $1'],[/^♥ есть у (\d+) коллекционеров · хотят (\d+)$/,'♥ owned by $1 collectors · wanted by $2']);
 // t() — для текстов, которые собираются в коде (числа, даты, картинка, таблица)
@@ -1709,7 +1733,7 @@ document.addEventListener('contextmenu',e=>{
 document.addEventListener('dragstart',e=>e.preventDefault());
 
 /* ---------- профиль ---------- */
-const VERSION='2026.11.15 · RU/EN';
+const VERSION='2026.11.24 · RU/EN';window.VV_VERSION=VERSION;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const plural=(n,a,b,c)=>{if(lang==='en')return tr(n===1?a:c);const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c};
 const CUR={EUR:'€',USD:'$',RUB:'₽',ILS:'₪',GBP:'£'};
@@ -2024,6 +2048,7 @@ function openAbout(){
   <div style="text-align:center;margin:4px 0 14px"><img src="icon-192.png" alt="" style="width:72px;height:72px;border-radius:18px"><h3 class="sh-t" style="margin-top:8px">Винила-ванила</h3><small style="color:var(--muted)">${tr('Версия {v}',{v:VERSION})}</small></div>
   <p class="prose" style="margin-bottom:6px">Цифровая полка вашей коллекции винила: обложки, трек-листы, история групп, полные треки и метки на конвертах. Чтобы винил жил дольше, а о каждой пластинке оставалась память.</p>
   <button class="btn" style="width:100%;margin:6px 0 4px" id="aboutOnb">✨ Показать приветствие</button>
+  <button class="btn" style="width:100%;margin:0 0 4px" id="aboutUpd">🔄 Проверить обновление</button>
   <div class="side-lbl">КАК ПОЛЬЗОВАТЬСЯ</div>
   <ul class="howto">
     <li><b>＋ Добавить</b>: сфотографируйте конверт или возьмите фото из галереи, найдите пластинку в базе или впишите вручную. «Хочу купить» кладёт её в список желаний.</li>
@@ -2036,6 +2061,7 @@ function openAbout(){
   <p class="note" style="margin:0">Спасибо открытым проектам: MusicBrainz (база изданий), Cover Art Archive (обложки), Википедия (биографии), Discogs (рыночные цены), YouTube и Apple Music (музыка). Всё бесплатно и без регистрации. Коллекция хранится только на этом телефоне, в интернет уходят лишь поисковые запросы к этим базам.</p>
   ${closeBtn()}`);
   $('#aboutOnb').onclick=()=>{closeTagSheet();setTimeout(openOnb,350)};
+  $('#aboutUpd').onclick=()=>{$('#aboutUpd').textContent=tr('Обновляю…');window.vvHardUpdate()};
 }
 $('#pcard').onclick=openProfileSheet;
 $('#valueRow').onclick=openValue;
@@ -2072,7 +2098,7 @@ setLang(lang,true);
 let saved='carpet';try{saved=localStorage.getItem('vv-theme2')||'carpet'}catch(e){}
 if(saved!=='strict')document.documentElement.dataset.theme=saved; // цвета сразу, полка — после загрузки
 const startHash=location.hash;
-history.replaceState({v:'shelf',d:0},'',location.pathname+location.search);
+history.replaceState({v:'shelf',d:0},'',location.pathname+location.search.replace(/^\?u=\d+$/,''));
 loadRecords().finally(()=>{
   setTheme(saved);
   show('shelf',{anim:false});
@@ -2099,7 +2125,6 @@ window.updateInstallBar=updateInstallBar;
 addEventListener('appinstalled',()=>{window.__bip=null;updateInstallBar();toast('Приложение установлено ✓')});
 $('#installRow').onclick=installApp;
 updateInstallBar();
-if('serviceWorker' in navigator&&OWN_HOST)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
