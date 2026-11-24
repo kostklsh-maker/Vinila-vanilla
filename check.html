@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Проверка обновления</title>
+<style>
+/* страница проверки: отдельная от приложения, чтобы открыться даже когда приложение застряло на старой копии */
+:root{--bg:#0d1018;--panel:#161a26;--ink:#f2e6cc;--muted:#a6977c;--gold:#d6a64f;--red:#b3262f;--ok:#5fb37a}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#fbf6ec;--panel:#fff;--ink:#2a2118;--muted:#7d6b55}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,sans-serif;padding:24px 16px 40px}
+main{max-width:520px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}
+p{color:var(--muted);margin:0 0 16px}
+.row{background:var(--panel);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;gap:12px}
+.row b{font-weight:600}
+.row span{color:var(--muted);text-align:right;word-break:break-word}
+.ok{color:var(--ok)!important}.bad{color:#e04450!important}
+button,a.btn{display:block;width:100%;margin-top:14px;padding:15px;border:0;border-radius:30px;font:600 15px system-ui;text-align:center;text-decoration:none;cursor:pointer}
+button{background:linear-gradient(#ecc777,#c38f37);color:#1b1206}
+a.btn{background:var(--panel);color:var(--ink)}
+#msg{margin-top:14px;color:var(--gold)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Проверка обновления</h1>
+  <p>Сравниваем версию на сайте с той, что сохранена в телефоне. Коллекция при сбросе не удаляется.</p>
+  <div class="row"><b>Интернет</b><span id="net">…</span></div>
+  <div class="row"><b>Версия на сайте</b><span id="live">…</span></div>
+  <div class="row"><b>Сохранённая копия</b><span id="cached">…</span></div>
+  <div class="row"><b>Служба обновлений</b><span id="sw">…</span></div>
+  <div class="row"><b>Пластинок в коллекции</b><span id="recs">…</span></div>
+  <button id="reset">Сбросить старую копию и открыть приложение</button>
+  <a class="btn" href="./?u=1">Открыть приложение</a>
+  <div id="msg"></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const ver=html=>(html.match(/const VERSION='([^']+)'/)||[])[1]||'не найдена';
+$('net').textContent=navigator.onLine?'есть':'нет';$('net').className=navigator.onLine?'ok':'bad';
+(async()=>{
+  // версия прямо с сервера, мимо всех сохранённых копий
+  try{const t=await (await fetch('index.html?check='+Date.now(),{cache:'no-store'})).text();$('live').textContent=ver(t);$('live').className='ok'}
+  catch(e){$('live').textContent='сайт недоступен: '+e.message;$('live').className='bad'}
+  // версия, которую телефон показывает без сети
+  try{
+    const names=window.caches?await caches.keys():[];let found='нет';
+    for(const n of names){const c=await caches.open(n);const r=await c.match('./')||await c.match('index.html');if(r){found=ver(await r.text())+' ('+n+')';break}}
+    $('cached').textContent=found;
+    if($('live').className==='ok'&&found.startsWith($('live').textContent))$('cached').className='ok';else if(found!=='нет')$('cached').className='bad';
+  }catch(e){$('cached').textContent='—'}
+  try{const rs=navigator.serviceWorker?await navigator.serviceWorker.getRegistrations():[];$('sw').textContent=rs.length?rs.map(r=>(r.active||r.waiting||r.installing)?.scriptURL.split('/').pop()||'?').join(', '):'нет'}catch(e){$('sw').textContent='—'}
+  try{
+    const db=await new Promise((res,rej)=>{const q=indexedDB.open('vinila-vanila',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});
+    const recs=await new Promise(res=>{const q=db.transaction('kv').objectStore('kv').get('records');q.onsuccess=()=>res(q.result);q.onerror=()=>res(null)});
+    let n=Array.isArray(recs)?recs.length:null;
+    if(n==null){try{const l=JSON.parse(localStorage.getItem('vv-records'));if(Array.isArray(l))n=l.length}catch(e){}}
+    $('recs').textContent=n==null?'нет данных':n;
+  }catch(e){$('recs').textContent='—'}
+})();
+// сброс: убираем службу обновлений и сохранённые копии страниц; коллекция (IndexedDB) и настройки остаются
+$('reset').onclick=async()=>{
+  $('msg').textContent='Сбрасываю…';
+  try{for(const r of (navigator.serviceWorker?await navigator.serviceWorker.getRegistrations():[]))await r.unregister()}catch(e){}
+  try{for(const k of (window.caches?await caches.keys():[]))await caches.delete(k)}catch(e){}
+  $('msg').textContent='Готово. Открываю приложение…';
+  setTimeout(()=>location.replace('./?u='+Date.now()),600);
+};
+</script>
+</body>
+</html>
