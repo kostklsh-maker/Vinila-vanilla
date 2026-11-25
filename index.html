@@ -546,7 +546,7 @@ details.adv[open] summary::after{content:'▴'}
 .cam #camtxt b{font-family:var(--hfont);font-size:20px;color:var(--ink)}
 .cam #camtxt span{font-size:12px;line-height:1.45;color:var(--muted)}
 :root[data-theme="carpet"] .cam{background:url(art/scan.webp) center/cover;border:2px solid #d6a64f88}
-:root[data-theme="carpet"] .cam #camtxt{background:rgba(12,14,22,.8);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+:root[data-theme="carpet"] .cam #camtxt{background:rgba(12,14,22,.42);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);text-shadow:0 1px 3px #000,0 0 12px #000c;padding:10px 16px;align-items:center;text-align:center}
 :root[data-theme="carpet"] .cam #camtxt span{color:#e9dcc0}
 :root[data-theme="carpet"] .cam:not(.has) .scan{display:block;opacity:.55;animation-duration:3.2s}
 /* кнопка «＋» — яблоко пластинки, медленно крутится */
@@ -641,7 +641,7 @@ details.adv[open] summary::after{content:'▴'}
         <div style="padding:0 20px 14px"><button class="btn" style="width:100%" id="scanTag">📡 Прочитать метку на конверте</button></div>
         <div class="seg" id="addTo"><button data-to="shelf" class="on">💿 В коллекцию</button><button data-to="wish">♡ Хочу купить</button></div>
         <div class="cam" id="cam" role="button" tabindex="0">
-          <div id="camtxt"><b>Сфотографируйте обложку</b><span>Нажмите здесь — откроется камера с рамкой. Приложение само найдёт пластинку по надписям или штрихкоду.</span></div>
+          <div id="camtxt"><b>Сфотографируйте обложку</b><span>Нажмите — откроется камера</span></div>
           <div class="scan"></div>
         </div>
         <div class="pick">
@@ -890,7 +890,7 @@ Object.assign(EN,{"❖ Ковёр":"❖ Carpet",
  "Пропустить":"Skip",
  "📷 Сканировать первую пластинку":"📷 Scan your first record",
  "Сначала посмотрю полку":"Show me the shelf first",
- "✨ Показать приветствие":"✨ Show the welcome screens","🔄 Проверить обновление":"🔄 Check for updates","Вся полка":"Whole shelf","Полка пуста":"The shelf is empty","Зажмите корешок и ведите пальцем — обложки листаются":"Hold a spine and slide your finger to flip through the covers","Сфотографируйте обложку":"Photograph the cover","Нажмите здесь — откроется камера с рамкой. Приложение само найдёт пластинку по надписям или штрихкоду.":"Tap here to open the camera with a frame. The app finds the record from its text or barcode.","Обновляю…":"Updating…",
+ "✨ Показать приветствие":"✨ Show the welcome screens","🔄 Проверить обновление":"🔄 Check for updates","Вся полка":"Whole shelf","Полка пуста":"The shelf is empty","Зажмите корешок и ведите пальцем — обложки листаются":"Hold a spine and slide your finger to flip through the covers","Сфотографируйте обложку":"Photograph the cover","Нажмите — откроется камера":"Tap to open the camera","Обновляю…":"Updating…",
  "Не получилось открыть фото. Попробуйте снять ещё раз или выбрать другое.":"Couldn’t open the photo. Try taking it again or choose another one."});
 EN_RX.push([/^Источник: (.+)$/,'Source: $1'],[/^♥ есть у (\d+) коллекционеров · хотят (\d+)$/,'♥ owned by $1 collectors · wanted by $2']);
 // t() — для текстов, которые собираются в коде (числа, даты, картинка, таблица)
@@ -964,7 +964,7 @@ function coverHTML(r,big){
 }
 // обложки нет в архиве — показываем своё фото конверта, а если и его нет — название на цветном фоне
 function coverFail(img){const r=records.find(x=>x.id==img.dataset.fb);if(r&&r.photo&&!img.dataset.tried){img.dataset.tried=1;img.src=r.photo}else img.remove()}
-const sides=r=>['A','B','C','D'].filter(k=>r[k]&&r[k].length);
+const sides=r=>[...'ABCDEFGH'].filter(k=>r[k]&&r[k].length);
 const tracks=r=>sides(r).flatMap(k=>r[k].map(x=>({...x,side:k})));
 const secs=d=>{if(!d)return 180;const [m,s]=d.split(':').map(Number);return m*60+(s||0)};
 const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
@@ -1250,7 +1250,7 @@ async function playYT(id){
   await ytApi();
   $('#ytwrap').style.display='block';
   if(!yt){yt=await new Promise(res=>{const p=new YT.Player('yt',{width:'100%',height:'210',videoId:id,playerVars:{autoplay:1,playsinline:1,rel:0},
-      events:{onReady:()=>{p.playVideo();res(p)},onStateChange:e=>{if(e.data===YT.PlayerState.ENDED)next();if(e.data===YT.PlayerState.PLAYING){playing=true;updateUI();$('#srcInfo').textContent='▶ Полный трек'}}}})});}
+      events:{onReady:()=>{p.playVideo();res(p)},onStateChange:e=>{if(e.data===YT.PlayerState.ENDED)next();if(e.data===YT.PlayerState.PAUSED&&playing&&document.hidden&&Date.now()-hiddenAt<4000)setTimeout(()=>{if(playing&&yt)yt.playVideo()},300);if(e.data===YT.PlayerState.PLAYING){playing=true;updateUI();$('#srcInfo').textContent='▶ Полный трек'}}}})});}
   else yt.loadVideoById(id);
   // если телефон не дал запустить звук сам, подсказываем нажать ▶ в окне плеера
   setTimeout(()=>{if(src==='yt'&&yt&&yt.getPlayerState&&yt.getPlayerState()!==YT.PlayerState.PLAYING&&yt.getPlayerState()!==YT.PlayerState.BUFFERING){playing=false;updateUI();$('#srcInfo').textContent='Нажмите ▶ в окне видео, чтобы запустить звук'}},4000);
@@ -1267,7 +1267,7 @@ async function playTrack(){
   try{id=await findFree(r,t)}catch(e){}
   if(!id&&key){try{id=await findYouTube(r,t,key)}catch(e){toast('YouTube: '+e.message.slice(0,60))}}
   if(seq!==loadSeq)return;
-  if(id){src='yt';await playYT(id);$('#srcInfo').textContent='▶ Полный трек';return}
+  if(id){src='yt';await playYT(id);$('#srcInfo').textContent='▶ Полный трек';prefetchNext();return}
   $('#ytwrap').style.display='none';
   try{const pv=await findPreview(r,t);if(seq!==loadSeq)return;
     if(pv){src='preview';audio.src=pv;await audio.play();$('#srcInfo').textContent='🎵 Фрагмент 30 сек · Apple Music';return}
@@ -1275,6 +1275,22 @@ async function playTrack(){
   src=null;playing=false;updateUI();$('#srcInfo').textContent='Трек не найден в каталоге';
 }
 function load(r,i){current=r;queue=tracks(r);qi=i;playTrack();toast('▶ '+queue[qi].t)}
+// следующий трек ищем заранее: когда приложение свёрнуто, переход должен случиться без долгих поисков
+function prefetchNext(){const r=current,t=queue[qi+1];if(r&&t)findFree(r,t).catch(()=>{})}
+// свернули приложение: запоминаем момент, чтобы отличить паузу от YouTube от паузы, которую поставили вы
+let hiddenAt=0;document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();setTimeout(()=>{if(document.hidden&&playing&&src==='yt'&&yt&&yt.getPlayerState&&yt.getPlayerState()===YT.PlayerState.PAUSED)yt.playVideo()},1500)}});
+// экран блокировки и шторка: название, обложка и кнопки ▶ ⏸ ⏮ ⏭
+function mediaMeta(){
+  if(!('mediaSession' in navigator)||!current)return;
+  const t=queue[qi]||{},art=/^https?:/.test(current.img||'')?current.img:new URL('icon-512.png',location.href).href;
+  try{navigator.mediaSession.metadata=new MediaMetadata({title:t.t||current.title,artist:current.artist,album:current.title,artwork:[{src:art,sizes:'512x512'}]})}catch(e){}
+  navigator.mediaSession.playbackState=playing?'playing':'paused';
+}
+if('mediaSession' in navigator){
+  const ms=navigator.mediaSession,on=(a,f)=>{try{ms.setActionHandler(a,f)}catch(e){}};
+  on('play',()=>{if(!playing)toggle()});on('pause',()=>{if(playing)toggle()});
+  on('nexttrack',()=>next());on('previoustrack',()=>prev());on('seekto',e=>seek(e.seekTime));
+}
 function next(){if(!current)return;if(qi<queue.length-1){qi++;playTrack()}else{playing=false;stopAll();updateUI()}}
 function prev(){if(!current)return;if(pos>3||qi===0){seek(0)}else{qi--;playTrack()}}
 function seek(s){if(src==='preview')audio.currentTime=s;else if(src==='yt'&&yt)yt.seekTo(s,true);pos=s;updateBar()}
@@ -1288,7 +1304,7 @@ function toggle(){
 }
 const P='<path d="M8 5v14l11-7z"/>',PA='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 function updateUI(){
-  if(!current)return;const t=queue[qi];
+  if(!current)return;const t=queue[qi];mediaMeta();
   $('#np-t').textContent=t.t;$('#np-a').textContent=`${current.artist} · ${current.title} · сторона ${t.side}`;
   $('#ttlbl').textContent=current.img?'':current.artist;$('#ttlbl').style.background=current.img?`center/cover url('${String(current.img).replace(/'/g,'%27')}')`:(current.lbl||'#c43');$('#ttlbl').style.color=['#fff','#ddd','#e9a'].includes(current.lbl)?'#111':'#fff';
   $('#ttrec').classList.toggle('spin',playing);document.querySelector('.tt').classList.toggle('playing',playing);$('#arm').classList.toggle('down',playing);
@@ -1910,7 +1926,7 @@ document.addEventListener('contextmenu',e=>{
 document.addEventListener('dragstart',e=>e.preventDefault());
 
 /* ---------- профиль ---------- */
-const VERSION='2026.11.25 · RU/EN';window.VV_VERSION=VERSION;
+const VERSION='2026.11.25b · RU/EN';window.VV_VERSION=VERSION;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const plural=(n,a,b,c)=>{if(lang==='en')return tr(n===1?a:c);const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c};
 const CUR={EUR:'€',USD:'$',RUB:'₽',ILS:'₪',GBP:'£'};
