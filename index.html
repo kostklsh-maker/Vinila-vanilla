@@ -461,6 +461,110 @@ details.adv[open] summary::after{content:'▴'}
 }
 #printArea{display:none}
 @media print{body>*:not(#printArea){display:none!important}#printArea{display:block;padding:20mm}body{background:#fff}}
+/* ---------- «Ковёр» 2: ковры на каждом экране, витрина над полкой, вертушка на ковре, живые мелочи ---------- */
+.carpet{display:none}
+:root[data-theme="carpet"] .phone{isolation:isolate}
+:root[data-theme="carpet"] .carpet{display:block;position:absolute;inset:-4%;z-index:0;background-color:#0d1018;background-position:center;background-size:cover;background-repeat:no-repeat;animation:drift 50s ease-in-out infinite alternate;pointer-events:none}
+:root[data-theme="carpet"] .carpet::after{content:'';position:absolute;inset:0;background:rgba(10,12,20,var(--scrim,.42))}
+/* блик проходит по ворсу раз в несколько секунд */
+:root[data-theme="carpet"] .carpet::before{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(105deg,transparent 42%,#fff2d01a 50%,transparent 58%);background-size:260% 100%;animation:sheen 11s ease-in-out infinite}
+:root[data-theme="carpet"] .carpet.swap{animation:drift 50s ease-in-out infinite alternate,carpetIn .6s ease}
+.carpet[data-v="shelf"]{background-image:url(art/bg-shelf.webp)}
+.carpet[data-v="detail"]{background-image:url(art/bg-detail.webp);--scrim:.7}
+.carpet[data-v="search"]{background-image:url(art/bg-search.webp);--scrim:.5}
+.carpet[data-v="add"]{background-image:url(art/bg-add.webp);--scrim:.5}
+.carpet[data-v="prof"]{background-image:url(art/bg-prof.webp);--scrim:.55}
+.carpet[data-v="player"]{background-image:url(art/bg-player.webp);--scrim:.35}
+@keyframes drift{from{transform:scale(1.02) translate(-1.5%,-1%)}to{transform:scale(1.06) translate(1.5%,1.2%)}}
+@keyframes sheen{0%,55%{background-position:120% 0}85%,100%{background-position:-120% 0}}
+@keyframes carpetIn{from{opacity:.2}to{opacity:1}}
+:root[data-theme="carpet"] .screen{position:relative;z-index:1}
+/* шапки и плашки — плотные и размытые: ковёр виден, текст читается */
+:root[data-theme="carpet"] .top,:root[data-theme="carpet"] .appbar,:root[data-theme="carpet"] #v-shelf>.top{background:rgba(11,13,21,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+:root[data-theme="carpet"] .hdr small,:root[data-theme="carpet"] .sec-t{text-transform:none;letter-spacing:.02em;font-size:13px}
+:root[data-theme="carpet"] .hdr h2{text-shadow:none}
+:root[data-theme="carpet"] .stat,:root[data-theme="carpet"] .ritem,:root[data-theme="carpet"] .chip,:root[data-theme="carpet"] .toggle,:root[data-theme="carpet"] .search input,:root[data-theme="carpet"] .btn:not(.pri),:root[data-theme="carpet"] .scanst,:root[data-theme="carpet"] .seg,:root[data-theme="carpet"] .manual input{background:rgba(14,17,27,.8);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-color:#ffffff1f}
+:root[data-theme="carpet"] .chip.on{background:#a3202a;border-color:#d6a64f;color:#fbecc8}
+:root[data-theme="carpet"] .stat::before,:root[data-theme="carpet"] .side-lbl::before{content:none}
+:root[data-theme="carpet"] .stat{background:rgba(14,17,27,.8)}
+:root[data-theme="carpet"] .sec-t,:root[data-theme="carpet"] .hint,:root[data-theme="carpet"] .or,:root[data-theme="carpet"] .note,:root[data-theme="carpet"] .sc-hint{color:#e9dcc0;text-shadow:0 1px 3px #000c}
+:root[data-theme="carpet"] .prof{background:rgba(12,14,22,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);margin:0 16px;padding:14px 16px 6px;border-radius:22px;border:1px solid #ffffff14}
+:root[data-theme="carpet"] .pcard{background:linear-gradient(90deg,#0d1018ee 40%,#0d101899),url(art/onb3.webp) center/cover}
+:root[data-theme="carpet"] #v-detail .tabs,:root[data-theme="carpet"] #v-detail .tl{background:rgba(12,14,22,.72);border-radius:18px}
+/* витрина: крупная обложка, справа выглядывает пластинка с яблоком под цвет конверта */
+.showcase{padding:4px 20px 18px;display:flex;flex-direction:column;align-items:center}
+.sc-stage{position:relative;width:min(62%,250px);aspect-ratio:1;margin-right:16%}
+.sc-disc{position:absolute;top:4%;left:40%;width:92%;aspect-ratio:1;border-radius:50%;background:repeating-radial-gradient(var(--vinyl-a) 0 1.5px,var(--vinyl-b) 1.5px 3px);box-shadow:0 10px 26px #000b;animation:spin 7s linear infinite}
+.sc-disc::after{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 20deg,transparent 0 12%,#ffffff14 16%,transparent 22% 58%,#ffffff10 63%,transparent 70%)}
+.sc-disc i{position:absolute;inset:34%;border-radius:50%;background:var(--lbl,#d6a64f);box-shadow:inset 0 0 0 3px #0003}
+.sc-disc i::after{content:'';position:absolute;inset:44%;border-radius:50%;background:#0d1018}
+.sc-cover{position:absolute;inset:0;border-radius:6px;overflow:hidden;box-shadow:0 18px 38px #000c;cursor:pointer;z-index:1;-webkit-user-select:none;user-select:none}
+.sc-cover .cover{width:100%;height:100%}
+.sc-cover.in-r{animation:scR .32s cubic-bezier(.2,.9,.3,1.15)}
+.sc-cover.in-l{animation:scL .32s cubic-bezier(.2,.9,.3,1.15)}
+.sc-cover.in-0{animation:sc0 .5s ease}
+@keyframes scR{from{transform:translateX(28px) rotate(3deg) scale(.94);opacity:.4}to{transform:none;opacity:1}}
+@keyframes scL{from{transform:translateX(-28px) rotate(-3deg) scale(.94);opacity:.4}to{transform:none;opacity:1}}
+@keyframes sc0{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.sc-meta{text-align:center;margin-top:14px;max-width:100%;padding:8px 16px;border-radius:14px}
+:root[data-theme="carpet"] .sc-meta{background:rgba(12,14,22,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.sc-meta b{display:block;font-family:var(--hfont);font-size:21px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-meta span{display:block;color:var(--accent);font-size:13px;margin-top:2px}
+.showcase.empty .sc-stage{display:none}
+.sc-hint{font-size:12px;color:var(--muted);text-align:center;padding:4px 24px 0}
+/* корешки: несколько полок, на корешке — полоса самой обложки */
+#spines .spines{flex-wrap:nowrap;overflow:visible;height:auto;min-height:150px;gap:3px;padding:0 20px}
+#spines .spine{width:28px;flex:none;position:relative;transform:rotate(180deg);transition:transform .2s cubic-bezier(.2,.9,.3,1.3),filter .2s;background-size:cover}
+#spines .spine.art{background-image:var(--sp)!important;background-position:center}
+#spines .spine span{position:absolute;inset:0;display:flex;align-items:center;padding:8px 0;color:#f6ecd6;text-shadow:0 1px 2px #000;overflow:hidden;white-space:nowrap}
+#spines .spine.art span{background:linear-gradient(90deg,#000a,#0006 50%,#000a)}
+#spines .spine.on{box-shadow:inset 0 0 0 2px var(--accent)}
+#spines.scrubbing .spine{filter:brightness(.6)}
+#spines .spine.lift{transform:rotate(180deg) translateY(14px) scale(1.06);filter:none;z-index:2}
+@media (hover:hover){#spines .spine:hover{transform:rotate(180deg) translateY(10px)}}
+/* проигрыватель: вертушка на ковре, наша пластинка — поверх пластинки на картинке */
+:root[data-theme="carpet"] .tt{aspect-ratio:1;width:calc(100% - 28px);max-width:440px;border-radius:16px;background:url(art/onb2.webp) center/cover;box-shadow:0 20px 44px #000b,0 0 0 2px #d6a64f55}
+:root[data-theme="carpet"] .tt .platter{left:26.2%;top:24.8%;width:47.6%;background:#050505;box-shadow:0 6px 16px #000c}
+:root[data-theme="carpet"] .tt .platter .rec{inset:0}
+:root[data-theme="carpet"] .tt .rec .lbl{inset:33%;background-size:cover!important;box-shadow:0 0 0 2px #0006}
+:root[data-theme="carpet"] .tt .rec .lbl::after{content:'';position:absolute;left:50%;top:50%;width:8%;height:8%;margin:-4% 0 0 -4%;border-radius:50%;background:#ccc;box-shadow:0 0 0 2px #555}
+:root[data-theme="carpet"] .arm{right:20.5%;top:21%;height:40%;transform:rotate(-14deg)}
+:root[data-theme="carpet"] .arm.down{transform:rotate(9deg)}
+.led{display:none}
+:root[data-theme="carpet"] .tt .led{display:block;position:absolute;width:2.2%;aspect-ratio:1;border-radius:50%;background:#ff5a3c;box-shadow:0 0 8px 2px #ff5a3caa;animation:blink 2.4s ease-in-out infinite}
+.tt .led.l1{left:16.2%;top:33.2%}
+.tt .led.l2{left:80.6%;top:42.5%;background:#7dff8a;box-shadow:0 0 8px 2px #7dff8a99;animation-delay:.8s}
+.tt .led.l3{left:24.4%;top:44.4%;animation-duration:1.3s;animation-delay:.3s}
+:root[data-theme="carpet"] .tt.playing .led{animation-duration:.5s}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+:root[data-theme="carpet"] .np,:root[data-theme="carpet"] .times{text-shadow:0 1px 3px #000}
+:root[data-theme="carpet"] #v-player .np{background:rgba(12,14,22,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);margin:0 20px 12px;padding:10px 14px;border-radius:16px}
+:root[data-theme="carpet"] #v-player .np p{margin-bottom:0}
+:root[data-theme="carpet"] .bar{background:#ffffff30}
+/* область фото на экране «Добавить»: ковёр и понятная подпись, по ковру ходит луч сканера */
+.cam #camtxt{position:relative;z-index:1;padding:14px 18px;margin:0 18px;border-radius:16px;display:flex;flex-direction:column;gap:6px;max-width:290px}
+.cam #camtxt b{font-family:var(--hfont);font-size:20px;color:var(--ink)}
+.cam #camtxt span{font-size:12px;line-height:1.45;color:var(--muted)}
+:root[data-theme="carpet"] .cam{background:url(art/scan.webp) center/cover;border:2px solid #d6a64f88}
+:root[data-theme="carpet"] .cam #camtxt{background:rgba(12,14,22,.8);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+:root[data-theme="carpet"] .cam #camtxt span{color:#e9dcc0}
+:root[data-theme="carpet"] .cam:not(.has) .scan{display:block;opacity:.55;animation-duration:3.2s}
+/* кнопка «＋» — яблоко пластинки, медленно крутится */
+:root[data-theme="carpet"] .tab.add{position:relative;overflow:hidden}
+:root[data-theme="carpet"] .tab.add::before{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 20%,#fff3 25%,transparent 30% 70%,#fff2 75%,transparent 80%);animation:spin 6s linear infinite}
+:root[data-theme="carpet"] .tab.add svg{position:relative}
+/* всплывающие окна — с пружинкой */
+:root[data-theme="carpet"] .sheet{animation:upSpring .42s cubic-bezier(.2,1.25,.35,1)}
+@keyframes upSpring{from{transform:translateY(100%)}to{transform:none}}
+:root[data-theme="carpet"] .toast{transition:transform .45s cubic-bezier(.2,1.35,.4,1)}
+:root[data-theme="carpet"] #res .ritem,:root[data-theme="carpet"] #qres .ritem{animation:rise .35s ease both}
+:root[data-theme="carpet"] #res .ritem:nth-child(2),:root[data-theme="carpet"] #qres .ritem:nth-child(2){animation-delay:.04s}
+:root[data-theme="carpet"] #res .ritem:nth-child(3),:root[data-theme="carpet"] #qres .ritem:nth-child(3){animation-delay:.08s}
+:root[data-theme="carpet"] #res .ritem:nth-child(n+4),:root[data-theme="carpet"] #qres .ritem:nth-child(n+4){animation-delay:.12s}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .carpet,.carpet::before,.sc-disc,.sc-cover,.tab.add::before,.tt .led,#res .ritem,#qres .ritem{animation:none!important}
+}
 </style>
 </head>
 <body>
@@ -497,6 +601,7 @@ details.adv[open] summary::after{content:'▴'}
       <div class="camhint">Поместите обложку в рамку целиком, без бликов.<br>Или наведите на штрихкод на обороте.</div>
       <div class="cambar"><button id="camGal" aria-label="Из галереи">🖼</button><button class="shutter" id="camShot" aria-label="Снять"></button><span></span></div>
     </div>
+    <div class="carpet" id="carpet" data-v="shelf"></div>
     <div class="screen" id="screen">
 
       <!-- SHELF -->
@@ -511,10 +616,10 @@ details.adv[open] summary::after{content:'▴'}
           <div class="stat"><b id="s-art">0</b><span>артистов</span></div>
           <div class="stat"><b id="s-hours">0</b><span>часов музыки</span></div>
         </div>
-        <div class="sec-t"><span id="secT1">Недавно добавленные</span><span>листать →</span></div>
-        <div class="shelf"><div class="shelf-row" id="row1"></div><div class="plank"></div></div>
-        <div class="sec-t"><span>Вся полка · корешки</span><span id="s-sort">по артисту</span></div>
-        <div class="shelf"><div class="spines" id="spines"></div><div class="plank"></div></div>
+        <div class="showcase" id="showcase"><div class="sc-stage"><div class="sc-disc" id="scDisc"><i></i></div><div class="sc-cover" id="scCover"></div></div><div class="sc-meta"><b id="scT"></b><span id="scA"></span></div></div>
+        <div class="sec-t"><span id="secT1">Вся полка</span><span id="s-sort">по артисту</span></div>
+        <div class="shelf" id="spines"></div>
+        <p class="sc-hint">Зажмите корешок и ведите пальцем — обложки листаются</p>
       </section>
 
       <!-- DETAIL -->
@@ -535,10 +640,10 @@ details.adv[open] summary::after{content:'▴'}
         <div class="top"><div class="hdr"><div><small>Новая пластинка</small><h2>Добавить</h2></div></div></div>
         <div style="padding:0 20px 14px"><button class="btn" style="width:100%" id="scanTag">📡 Прочитать метку на конверте</button></div>
         <div class="seg" id="addTo"><button data-to="shelf" class="on">💿 В коллекцию</button><button data-to="wish">♡ Хочу купить</button></div>
-        <label class="cam" id="cam" for="gal">
-          <div id="camtxt" style="padding:0 20px"><span style="font-size:34px">🖼</span><br>Фото обложки<br><span style="font-size:11px">с камеры или из галереи —<br>приложение узнает пластинку по надписям или штрихкоду</span></div>
+        <div class="cam" id="cam" role="button" tabindex="0">
+          <div id="camtxt"><b>Сфотографируйте обложку</b><span>Нажмите здесь — откроется камера с рамкой. Приложение само найдёт пластинку по надписям или штрихкоду.</span></div>
           <div class="scan"></div>
-        </label>
+        </div>
         <div class="pick">
           <button class="btn" id="camBtn">📷 Камера</button>
           <label class="btn" for="gal">🖼 Из галереи</label>
@@ -562,7 +667,7 @@ details.adv[open] summary::after{content:'▴'}
       <!-- PLAYER -->
       <section class="view" id="v-player">
         <div class="top"><div class="hdr"><div><small>Сейчас играет</small><h2>Проигрыватель</h2></div></div></div>
-        <div class="tt"><div class="platter"><div class="rec" id="ttrec"><div class="lbl" id="ttlbl">—</div></div></div><div class="arm" id="arm"><i></i></div></div>
+        <div class="tt"><div class="platter"><div class="rec" id="ttrec"><div class="lbl" id="ttlbl">—</div></div></div><div class="arm" id="arm"><i></i></div><i class="led l1"></i><i class="led l2"></i><i class="led l3"></i></div>
         <div class="np"><h4 id="np-t">Поставьте пластинку</h4><p id="np-a">выберите альбом на полке</p></div>
         <div class="bar" id="bar"><i id="bari"></i></div>
         <div class="times"><span id="tcur">0:00</span><span id="tdur">0:00</span></div>
@@ -785,7 +890,7 @@ Object.assign(EN,{"❖ Ковёр":"❖ Carpet",
  "Пропустить":"Skip",
  "📷 Сканировать первую пластинку":"📷 Scan your first record",
  "Сначала посмотрю полку":"Show me the shelf first",
- "✨ Показать приветствие":"✨ Show the welcome screens","🔄 Проверить обновление":"🔄 Check for updates","Обновляю…":"Updating…",
+ "✨ Показать приветствие":"✨ Show the welcome screens","🔄 Проверить обновление":"🔄 Check for updates","Вся полка":"Whole shelf","Полка пуста":"The shelf is empty","Зажмите корешок и ведите пальцем — обложки листаются":"Hold a spine and slide your finger to flip through the covers","Сфотографируйте обложку":"Photograph the cover","Нажмите здесь — откроется камера с рамкой. Приложение само найдёт пластинку по надписям или штрихкоду.":"Tap here to open the camera with a frame. The app finds the record from its text or barcode.","Обновляю…":"Updating…",
  "Не получилось открыть фото. Попробуйте снять ещё раз или выбрать другое.":"Couldn’t open the photo. Try taking it again or choose another one."});
 EN_RX.push([/^Источник: (.+)$/,'Source: $1'],[/^♥ есть у (\d+) коллекционеров · хотят (\d+)$/,'♥ owned by $1 collectors · wanted by $2']);
 // t() — для текстов, которые собираются в коде (числа, даты, картинка, таблица)
@@ -865,26 +970,95 @@ const secs=d=>{if(!d)return 180;const [m,s]=d.split(':').map(Number);return m*60
 const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 
 // коллекция — пластинки без пометки wish; список желаний — фильтр «♡ Хочу»
+let shelfList=[];
 function renderShelf(){
   const own=records.filter(r=>!r.wish),wish=records.filter(r=>r.wish);
   const genres=['Все',...new Set(own.map(r=>r.genre))];
   if(genre!=='♡'&&!genres.includes(genre))genre='Все';
   const list=genre==='♡'?wish:own.filter(r=>genre==='Все'||r.genre===genre);
   $('#chips').innerHTML=['Все','♡',...genres.slice(1)].map(g=>`<div class="chip ${g===genre?'on':''}" data-g="${g}">${g==='♡'?'♡ Хочу'+(wish.length?' · '+wish.length:''):g}</div>`).join('');
-  $('#secT1').textContent=genre==='♡'?'Хочу купить':'Недавно добавленные';
-  $('#row1').innerHTML=[...list].reverse().map(r=>`<div class="sleeve" data-id="${r.id}"><div class="disc"></div>${r.tag?'<span class="tagbadge">🏷</span>':''}${coverHTML(r)}</div>`).join('')
+  $('#secT1').textContent=genre==='♡'?'Хочу купить':'Вся полка';
+  shelfList=[...list].sort((a,b)=>a.artist.localeCompare(b.artist));
+  // корешки стоят на нескольких полках; на корешке — полоска самой обложки, как у настоящего конверта
+  const perRow=Math.max(6,Math.floor((($('#spines').clientWidth||350)-40)/31));
+  const spine=(r,i)=>{
+    const v=theme==='vanilla',p=PASTEL[i%PASTEL.length],h=118+(Number(r.id)%29);
+    const bg=v?`linear-gradient(90deg,${p},${p}cc)`:`linear-gradient(90deg,${(r.c||['#5a4636'])[0]},${(r.c||[,'#2a1d14'])[1]})`;
+    const img=!v&&r.img?`;--sp:url('${String(r.img).replace(/'/g,'%27')}')`:'';
+    return `<div class="spine${img?' art':''}" data-id="${r.id}" style="height:${h}px;background:${bg}${img}"><span>${esc(r.artist)} — ${esc(r.title)}</span></div>`;
+  };
+  const rows=[];for(let i=0;i<shelfList.length;i+=perRow)rows.push(shelfList.slice(i,i+perRow));
+  $('#spines').innerHTML=rows.map((row,ri)=>`<div class="spines">${row.map((r,i)=>spine(r,ri*perRow+i)).join('')}</div><div class="plank"></div>`).join('')
     ||(genre==='♡'?'<div class="empty"><i>♡</i>Список желаний пуст.<br>Нажмите ＋ → «Хочу купить»</div>':'<div class="empty"><i>💿</i>Полка пуста.<br>Добавьте пластинку кнопкой ＋</div>');
-  $('#spines').innerHTML=[...list].sort((a,b)=>a.artist.localeCompare(b.artist)).map((r,i)=>{
-    const v=theme==='vanilla', p=PASTEL[i%PASTEL.length];
-    const bg=v?`linear-gradient(90deg,${p},${p}cc)`:`linear-gradient(90deg,${r.c[0]},${r.c[1]})`;
-    const fg=v?'#5b4a66':(r.dark?'#2a1a0a':'#f3e9dc');
-    return `<div class="spine" data-id="${r.id}" style="background:${bg};color:${fg}">${r.artist} — ${r.title}</div>`}).join('');
-  $('#s-count').textContent=own.length;
-  $('#s-art').textContent=new Set(own.map(r=>r.artist)).size;
-  $('#s-hours').textContent=(own.reduce((s,r)=>s+tracks(r).reduce((a,t)=>a+secs(t.d),0),0)/3600).toFixed(1);
+  // обложки заранее в памяти — при перелистывании пальцем меняются без задержки
+  shelfList.forEach(r=>{if(r.img&&!preloaded.has(r.img)){const im=new Image();im.src=r.img;preloaded.set(r.img,im)}});
+  const last=[...list].sort((a,b)=>b.id-a.id)[0];
+  showcaseTo(last?shelfList.indexOf(last):-1,0);
+  countUp($('#s-count'),own.length);
+  countUp($('#s-art'),new Set(own.map(r=>r.artist)).size);
+  countUp($('#s-hours'),own.reduce((s,r)=>s+tracks(r).reduce((a,t)=>a+secs(t.d),0),0)/3600,1);
   renderProfile();
   renderSearch();
 }
+// числа на полке досчитываются до нового значения
+function countUp(el,to,dec=0){
+  const from=parseFloat(el.textContent)||0;if(from===to){el.textContent=to.toFixed(dec);return}
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=to.toFixed(dec);return}
+  const t0=performance.now(),d=600;
+  const step=t=>{const k=Math.min(1,(t-t0)/d),e=1-Math.pow(1-k,3);el.textContent=(from+(to-from)*e).toFixed(dec);if(k<1)requestAnimationFrame(step)};
+  requestAnimationFrame(step);
+}
+
+/* ---------- витрина над полкой: крупная обложка с пластинкой; зажали корешок и ведёте пальцем — обложки листаются ---------- */
+const preloaded=new Map();
+let scIdx=-1,scLastTouch=0,scrub=null;
+function showcaseTo(i,dir=1){
+  const r=shelfList[i],cov=$('#scCover');
+  $('#showcase').classList.toggle('empty',!r);
+  if(!r){scIdx=-1;cov.innerHTML='';cov.removeAttribute('data-id');$('#scT').textContent=genre==='♡'?'Список желаний пуст':'Полка пуста';$('#scA').textContent='Добавьте пластинку кнопкой ＋';return}
+  if(i===scIdx&&cov.dataset.id==r.id)return;
+  scIdx=i;cov.dataset.id=r.id;
+  cov.innerHTML=coverHTML(r,1);
+  cov.classList.remove('in-l','in-r','in-0');void cov.offsetWidth;cov.classList.add(dir>0?'in-r':dir<0?'in-l':'in-0');
+  $('#scDisc').style.setProperty('--lbl',r.lbl||'#d6a64f');
+  $('#scT').textContent=r.title;$('#scA').textContent=r.artist+(r.year?' · '+r.year:'');
+  document.querySelectorAll('#spines .spine.on').forEach(s=>s.classList.remove('on'));
+  document.querySelector(`#spines .spine[data-id="${r.id}"]`)?.classList.add('on');
+}
+// пока полку не трогают, витрина сама перелистывает пластинки
+setInterval(()=>{
+  if(curView!=='shelf'||document.hidden||scrub||shelfList.length<2||Date.now()-scLastTouch<9000)return;
+  if(!$('#onb').hidden||$('#tagBg').classList.contains('on'))return;
+  showcaseTo((scIdx+1)%shelfList.length,1);
+},4500);
+$('#scCover').addEventListener('click',()=>{const id=$('#scCover').dataset.id;if(id)openRecord(id)});
+const spineAt=(x,y)=>{const el=document.elementFromPoint(x,y);return el&&el.closest&&el.closest('#spines .spine')};
+function scrubTo(sp){
+  const i=shelfList.findIndex(r=>r.id==sp.dataset.id);if(i<0||i===scIdx)return;
+  showcaseTo(i,i>scIdx?1:-1);
+  if(navigator.vibrate)navigator.vibrate(6);
+}
+// палец: короткое касание открывает пластинку, удержание — листает обложки
+$('#spines').addEventListener('touchstart',e=>{
+  const sp=e.target.closest('.spine');if(!sp||e.touches.length>1)return;
+  const t=e.touches[0];scLastTouch=Date.now();
+  scrub={x:t.clientX,y:t.clientY,on:false,timer:setTimeout(()=>{if(!scrub)return;scrub.on=true;$('#spines').classList.add('scrubbing');sp.classList.add('lift');scrubTo(sp);if(navigator.vibrate)navigator.vibrate(12)},180)};
+},{passive:true});
+$('#spines').addEventListener('touchmove',e=>{
+  if(!scrub)return;const t=e.touches[0];
+  if(!scrub.on){if(Math.hypot(t.clientX-scrub.x,t.clientY-scrub.y)>8){clearTimeout(scrub.timer);scrub=null}return}
+  e.preventDefault();
+  const sp=spineAt(t.clientX,t.clientY);
+  if(sp){document.querySelectorAll('#spines .spine.lift').forEach(s=>s!==sp&&s.classList.remove('lift'));sp.classList.add('lift');scrubTo(sp)}
+},{passive:false});
+const scrubEnd=()=>{
+  if(!scrub)return;clearTimeout(scrub.timer);
+  if(scrub.on){lpFired=true;$('#spines').classList.remove('scrubbing');document.querySelectorAll('#spines .spine.lift').forEach(s=>s.classList.remove('lift'))}
+  scrub=null;scLastTouch=Date.now();
+};
+['touchend','touchcancel'].forEach(n=>$('#spines').addEventListener(n,scrubEnd));
+// мышь: витрина следует за курсором над корешками
+$('#spines').addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;const sp=e.target.closest('.spine');if(sp){scLastTouch=Date.now();scrubTo(sp)}});
 
 // поиск по полке: альбом, артист, год, жанр — и по названиям песен
 function renderSearch(){
@@ -916,6 +1090,8 @@ function show(v,opt={}){
   if(opt.anim!==false){void el.offsetWidth;el.classList.add(opt.anim||'a-fade')}
   el.classList.add('on');
   curView=v;
+  // у каждого экрана свой ковёр; смена — плавным наплывом
+  const cp=$('#carpet');if(cp.dataset.v!==v){cp.dataset.v=v;cp.classList.remove('swap');void cp.offsetWidth;cp.classList.add('swap')}
   if(v!=='detail')document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   if(!opt.keep)sc.scrollTop=v==='detail'?0:(scrollMem[v]||0);
   $('#mini').classList.toggle('on',!!current&&v!=='player');
@@ -1114,8 +1290,8 @@ const P='<path d="M8 5v14l11-7z"/>',PA='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 function updateUI(){
   if(!current)return;const t=queue[qi];
   $('#np-t').textContent=t.t;$('#np-a').textContent=`${current.artist} · ${current.title} · сторона ${t.side}`;
-  $('#ttlbl').textContent=current.artist;$('#ttlbl').style.background=current.lbl||'#c43';$('#ttlbl').style.color=['#fff','#ddd','#e9a'].includes(current.lbl)?'#111':'#fff';
-  $('#ttrec').classList.toggle('spin',playing);$('#arm').classList.toggle('down',playing);
+  $('#ttlbl').textContent=current.img?'':current.artist;$('#ttlbl').style.background=current.img?`center/cover url('${String(current.img).replace(/'/g,'%27')}')`:(current.lbl||'#c43');$('#ttlbl').style.color=['#fff','#ddd','#e9a'].includes(current.lbl)?'#111':'#fff';
+  $('#ttrec').classList.toggle('spin',playing);document.querySelector('.tt').classList.toggle('playing',playing);$('#arm').classList.toggle('down',playing);
   $('#ppi').innerHTML=playing?PA:P;$('#mppi').innerHTML=playing?PA:P;
   $('#mini-t').textContent=t.t;$('#mini-a').textContent=current.artist;$('#mvl').style.background=current.lbl||'#c43';$('#mv').classList.toggle('spin',playing);
   $('#mini').classList.toggle('on',!$('#v-player').classList.contains('on'));
@@ -1428,6 +1604,7 @@ async function onBarcode(code){
   $('#scanSt').scrollIntoView({block:'start',behavior:'smooth'});
 }
 $('#camBtn').onclick=openCam;
+$('#cam').onclick=openCam;$('#cam').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openCam()}};
 $('#camShot').onclick=shootCam;
 $('#camClose').onclick=closeCam;
 $('#camGal').onclick=()=>{closeCam();$('#gal').click()};
@@ -1713,7 +1890,7 @@ function openActions(id){
 
 /* ---------- долгое нажатие: своё меню вместо меню браузера ---------- */
 let lpTimer=null,lpFired=false,lpXY=null;
-const lpTarget=el=>{const s=el.closest&&el.closest('.sleeve[data-id],.spine,.ritem[data-open]');return s&&!s.closest('.hero')?s:null};
+const lpTarget=el=>{const s=el.closest&&el.closest('.sleeve[data-id],.sc-cover[data-id],.ritem[data-open]');return s&&!s.closest('.hero')?s:null};
 const lpOpen=t=>{clearTimeout(lpTimer);lpFired=true;if(navigator.vibrate)navigator.vibrate(12);openActions(t.dataset.id||t.dataset.open)};
 document.addEventListener('pointerdown',e=>{
   lpFired=false;clearTimeout(lpTimer);
@@ -1733,7 +1910,7 @@ document.addEventListener('contextmenu',e=>{
 document.addEventListener('dragstart',e=>e.preventDefault());
 
 /* ---------- профиль ---------- */
-const VERSION='2026.11.24 · RU/EN';window.VV_VERSION=VERSION;
+const VERSION='2026.11.25 · RU/EN';window.VV_VERSION=VERSION;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const plural=(n,a,b,c)=>{if(lang==='en')return tr(n===1?a:c);const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c};
 const CUR={EUR:'€',USD:'$',RUB:'₽',ILS:'₪',GBP:'£'};
