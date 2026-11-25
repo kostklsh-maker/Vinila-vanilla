@@ -565,6 +565,16 @@ details.adv[open] summary::after{content:'▴'}
 @media (prefers-reduced-motion:reduce){
   .carpet,.carpet::before,.sc-disc,.sc-cover,.tab.add::before,.tt .led,#res .ritem,#qres .ritem{animation:none!important}
 }
+/* Лёгкий ковёр для телефона. Размытие поверх движущегося фона телефон пересчитывает в каждом кадре — вместе с видео
+   YouTube это подвешивало экран. Подложки теперь просто плотнее, блик едет сдвигом слоя (без перерисовки),
+   а на проигрывателе ковёр стоит — там и так крутится пластинка */
+:root[data-theme="carpet"] *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+:root[data-theme="carpet"] .top,:root[data-theme="carpet"] .appbar,:root[data-theme="carpet"] #v-shelf>.top{background:rgba(11,13,21,.66)}
+:root[data-theme="carpet"] .cam #camtxt{background:rgba(12,14,22,.5)}
+:root[data-theme="carpet"] .carpet{overflow:hidden}
+:root[data-theme="carpet"] .carpet::before{inset:0 auto 0 -100%;width:300%;background:linear-gradient(105deg,transparent 42%,#fff2d01a 50%,transparent 58%);background-size:100% 100%;animation:sheenX 11s ease-in-out infinite;will-change:transform}
+@keyframes sheenX{0%,55%{transform:translateX(30%)}85%,100%{transform:translateX(-30%)}}
+:root[data-theme="carpet"] .carpet[data-v="player"],:root[data-theme="carpet"] .carpet[data-v="player"]::before{animation:none}
 </style>
 </head>
 <body>
@@ -1246,39 +1256,67 @@ function ytApi(){
   if(ytReady)return ytReady;
   return ytReady=new Promise(res=>{window.onYouTubeIframeAPIReady=res;const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';document.head.appendChild(s)});
 }
-async function playYT(id){
+/* Состояние плеера. Кнопка ▶/⏸ показывает то, что реально звучит: события самого YouTube и аудио
+   переключают её, даже если паузу поставили в окне видео, в шторке или на экране блокировки.
+   loading — идёт поиск/загрузка трека; wantPlay — вы хотите, чтобы играло (отличает вашу паузу от паузы при сворачивании) */
+let loading=false,wantPlay=false,bgResumed=false;
+function setPlaying(v){if(playing!==v){playing=v;updateUI()}else mediaMeta()}
+const ytOk=()=>yt&&yt.getPlayerState&&[YT.PlayerState.PLAYING,YT.PlayerState.BUFFERING].includes(yt.getPlayerState());
+function onYT(e){
+  if(src!=='yt')return;const S=YT.PlayerState;
+  if(e.data===S.PLAYING){loading=false;wantPlay=true;setPlaying(true);$('#srcInfo').textContent='▶ Полный трек';return}
+  if(e.data===S.ENDED){if(!loading)next();return}
+  if(e.data===S.PAUSED){
+    if(loading)return;
+    // приложение только что свернули и YouTube сам встал на паузу — запускаем снова (один раз, чтобы не спорить с вашей паузой)
+    if(wantPlay&&document.hidden&&!bgResumed&&Date.now()-hiddenAt<5000){bgResumed=true;setTimeout(()=>{if(wantPlay&&src==='yt'&&yt)yt.playVideo()},300);return}
+    wantPlay=false;setPlaying(false);
+  }
+}
+async function playYT(id,seq){
   await ytApi();
+  if(seq!==loadSeq)return;
   $('#ytwrap').style.display='block';
   if(!yt){yt=await new Promise(res=>{const p=new YT.Player('yt',{width:'100%',height:'210',videoId:id,playerVars:{autoplay:1,playsinline:1,rel:0},
-      events:{onReady:()=>{p.playVideo();res(p)},onStateChange:e=>{if(e.data===YT.PlayerState.ENDED)next();if(e.data===YT.PlayerState.PAUSED&&playing&&document.hidden&&Date.now()-hiddenAt<4000)setTimeout(()=>{if(playing&&yt)yt.playVideo()},300);if(e.data===YT.PlayerState.PLAYING){playing=true;updateUI();$('#srcInfo').textContent='▶ Полный трек'}}}})});}
+      events:{onReady:()=>{if(seq===loadSeq&&wantPlay)p.playVideo();res(p)},onStateChange:onYT}})});}
   else yt.loadVideoById(id);
   // если телефон не дал запустить звук сам, подсказываем нажать ▶ в окне плеера
-  setTimeout(()=>{if(src==='yt'&&yt&&yt.getPlayerState&&yt.getPlayerState()!==YT.PlayerState.PLAYING&&yt.getPlayerState()!==YT.PlayerState.BUFFERING){playing=false;updateUI();$('#srcInfo').textContent='Нажмите ▶ в окне видео, чтобы запустить звук'}},4000);
+  setTimeout(()=>{if(seq===loadSeq&&src==='yt'&&loading&&!ytOk()){loading=false;wantPlay=false;setPlaying(false);$('#srcInfo').textContent='Нажмите ▶ в окне видео, чтобы запустить звук'}},5000);
 }
 setInterval(()=>{if(src==='yt'&&yt&&yt.getDuration){pos=yt.getCurrentTime()||0;dur=yt.getDuration()||dur;updateBar()}},500);
 
 function stopAll(){audio.pause();if(yt&&yt.pauseVideo)yt.pauseVideo()}
 async function playTrack(){
   const r=current,t=queue[qi],seq=++loadSeq;
-  stopAll();pos=0;dur=secs(t.d);playing=true;updateUI();
+  // старый источник замолкает, и его поздние события «пауза» больше не трогают кнопку
+  loading=true;wantPlay=true;stopAll();src=null;pos=0;dur=secs(t.d);playing=true;updateUI();
   $('#srcInfo').textContent='Ищу трек…';
   const key=getKey();
   let id=null;
   try{id=await findFree(r,t)}catch(e){}
   if(!id&&key){try{id=await findYouTube(r,t,key)}catch(e){toast('YouTube: '+e.message.slice(0,60))}}
   if(seq!==loadSeq)return;
-  if(id){src='yt';await playYT(id);$('#srcInfo').textContent='▶ Полный трек';prefetchNext();return}
+  if(id){src='yt';$('#srcInfo').textContent='Загружаю трек…';await playYT(id,seq);if(seq===loadSeq)prefetchNext();return}
   $('#ytwrap').style.display='none';
   try{const pv=await findPreview(r,t);if(seq!==loadSeq)return;
-    if(pv){src='preview';audio.src=pv;await audio.play();$('#srcInfo').textContent='🎵 Фрагмент 30 сек · Apple Music';return}
+    if(pv){src='preview';audio.src=pv;
+      try{await audio.play()}catch(e){if(seq!==loadSeq)return;loading=false;wantPlay=false;setPlaying(false);$('#srcInfo').textContent='Нажмите ▶, чтобы запустить звук';return}
+      if(seq!==loadSeq)return;loading=false;$('#srcInfo').textContent='🎵 Фрагмент 30 сек · Apple Music';return}
   }catch(e){if(seq!==loadSeq)return}
-  src=null;playing=false;updateUI();$('#srcInfo').textContent='Трек не найден в каталоге';
+  loading=false;wantPlay=false;src=null;setPlaying(false);$('#srcInfo').textContent='Трек не найден в каталоге';
 }
 function load(r,i){current=r;queue=tracks(r);qi=i;playTrack();toast('▶ '+queue[qi].t)}
 // следующий трек ищем заранее: когда приложение свёрнуто, переход должен случиться без долгих поисков
 function prefetchNext(){const r=current,t=queue[qi+1];if(r&&t)findFree(r,t).catch(()=>{})}
 // свернули приложение: запоминаем момент, чтобы отличить паузу от YouTube от паузы, которую поставили вы
-let hiddenAt=0;document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();setTimeout(()=>{if(document.hidden&&playing&&src==='yt'&&yt&&yt.getPlayerState&&yt.getPlayerState()===YT.PlayerState.PAUSED)yt.playVideo()},1500)}});
+let hiddenAt=0;document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){hiddenAt=Date.now();bgResumed=false;setTimeout(()=>{if(document.hidden&&wantPlay&&!bgResumed&&src==='yt'&&yt&&yt.getPlayerState&&yt.getPlayerState()===YT.PlayerState.PAUSED){bgResumed=true;yt.playVideo()}},1500)}
+  // вернулись в приложение — сверяем кнопку с тем, что реально звучит
+  else if(!loading&&src==='yt'&&yt&&yt.getPlayerState){const on=ytOk();if(on!==playing){wantPlay=on;setPlaying(on)}}
+});
+// фрагменты Apple Music: пауза от системы (звонок, наушники) тоже переключает кнопку
+audio.onplaying=()=>{if(src==='preview'){loading=false;wantPlay=true;setPlaying(true)}};
+audio.onpause=()=>{if(src==='preview'&&!loading&&!audio.ended){wantPlay=false;setPlaying(false)}};
 // экран блокировки и шторка: название, обложка и кнопки ▶ ⏸ ⏮ ⏭
 function mediaMeta(){
   if(!('mediaSession' in navigator)||!current)return;
@@ -1291,16 +1329,20 @@ if('mediaSession' in navigator){
   on('play',()=>{if(!playing)toggle()});on('pause',()=>{if(playing)toggle()});
   on('nexttrack',()=>next());on('previoustrack',()=>prev());on('seekto',e=>seek(e.seekTime));
 }
-function next(){if(!current)return;if(qi<queue.length-1){qi++;playTrack()}else{playing=false;stopAll();updateUI()}}
+function next(){if(!current)return;if(qi<queue.length-1){qi++;playTrack()}else{wantPlay=false;stopAll();setPlaying(false)}}
 function prev(){if(!current)return;if(pos>3||qi===0){seek(0)}else{qi--;playTrack()}}
 function seek(s){if(src==='preview')audio.currentTime=s;else if(src==='yt'&&yt)yt.seekTo(s,true);pos=s;updateBar()}
 function toggle(){
   if(!current)return;
+  // пауза во время поиска трека: поиск отменяется, звук не включится сам через секунду
+  if(loading){loadSeq++;loading=false;wantPlay=false;stopAll();src=null;setPlaying(false);$('#srcInfo').textContent='Пауза';return}
   if(!src){playTrack();return}
-  playing=!playing;
-  if(src==='preview')playing?audio.play():audio.pause();
-  if(src==='yt'&&yt)playing?yt.playVideo():yt.pauseVideo();
-  updateUI();
+  if(playing){wantPlay=false;setPlaying(false);if(src==='preview')audio.pause();else if(yt)yt.pauseVideo();return}
+  wantPlay=true;setPlaying(true);
+  if(src==='preview')audio.play().catch(()=>{wantPlay=false;setPlaying(false)});
+  else if(yt){yt.playVideo();
+    // телефон может не дать запустить видео — тогда кнопка возвращается к ▶
+    setTimeout(()=>{if(src==='yt'&&wantPlay&&!loading&&!ytOk()){wantPlay=false;setPlaying(false);$('#srcInfo').textContent='Нажмите ▶ в окне видео, чтобы запустить звук'}},3000)}
 }
 const P='<path d="M8 5v14l11-7z"/>',PA='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 function updateUI(){
@@ -1926,7 +1968,7 @@ document.addEventListener('contextmenu',e=>{
 document.addEventListener('dragstart',e=>e.preventDefault());
 
 /* ---------- профиль ---------- */
-const VERSION='2026.11.25b · RU/EN';window.VV_VERSION=VERSION;
+const VERSION='2026.11.26 · RU/EN';window.VV_VERSION=VERSION;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const plural=(n,a,b,c)=>{if(lang==='en')return tr(n===1?a:c);const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c};
 const CUR={EUR:'€',USD:'$',RUB:'₽',ILS:'₪',GBP:'£'};
