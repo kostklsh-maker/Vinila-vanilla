@@ -809,6 +809,7 @@ const EN={
  'Не удалось загрузить биографию (нет сети). В рабочей версии текст кешируется в приложении.':'Couldn’t load the biography (no connection).',
  '▶ Полный трек':'▶ Full track','Нажмите ▶ в окне видео, чтобы запустить звук':'Tap ▶ in the video to start the sound','Ищу трек…':'Finding the track…',
  '🎵 Фрагмент 30 сек · Apple Music':'🎵 30-second preview · Apple Music','Трек не найден в каталоге':'Track not found in the catalog',
+ '📀 Полная запись · Internet Archive':'📀 Full recording · Internet Archive','Загружаю трек…':'Loading track…','Пауза':'Paused','Нажмите ▶, чтобы запустить звук':'Tap ▶ to start the sound',
  'Ищу в MusicBrainz…':'Searching MusicBrainz…','Ничего не найдено. Попробуйте иначе.':'Nothing found. Try other words.','Нет связи с MusicBrainz. Проверьте интернет.':'Can’t reach MusicBrainz. Check your connection.',
  'Ошибка загрузки':'Loading error','Укажите артиста и альбом':'Enter the artist and album','Добавлено в список желаний ♡':'Added to wishlist ♡','Добавлено на полку ✓':'Added to the shelf ✓',
  'Ключ сохранён — полные треки включены':'Key saved — full tracks enabled','Ключ удалён':'Key removed',
@@ -1208,8 +1209,9 @@ const audio=new Audio();
 let src=null, yt=null, ytReady=null, loadSeq=0;
 const getKey=()=>{try{return localStorage.getItem('vv-ytkey')||''}catch(e){return ''}};
 const norm=s=>(s||'').toLowerCase().replace(/[^a-zа-яё0-9]/gi,'');
-audio.ontimeupdate=()=>{if(src==='preview'){pos=audio.currentTime;dur=audio.duration||30;updateBar()}};
-audio.onended=()=>{if(src==='preview')next()};
+const isAud=()=>src==='preview'||src==='archive';
+audio.ontimeupdate=()=>{if(isAud()){pos=audio.currentTime;dur=audio.duration||dur||30;updateBar()}};
+audio.onended=()=>{if(isAud())next()};
 
 async function findPreview(r,t){
   if(t.pv!==undefined)return t.pv;
@@ -1252,6 +1254,36 @@ async function findFree(r,t){
   }
   return null;
 }
+/* Internet Archive: полные записи, которые можно слушать законно — оцифровки пластинок 78 оборотов
+   (общественное достояние) и релизы нетлейблов под свободной лицензией. Альбомы, загруженные пользователями без прав,
+   сюда не попадают: ищем только в этих коллекциях. Звук идёт обычным аудио, поэтому играет и в свёрнутом приложении */
+const IA_LEGAL='collection:(78rpm OR georgeblood OR netlabels)';
+const iaWords=s=>((s||'').toLowerCase().replace(/ё/g,'е').replace(/\(.*?\)|\[.*?\]/g,' ').match(/[\p{L}\p{N}]+/gu)||[]).filter(w=>!['the','a','an','and','of','his','her','orchestra','orch','band','и'].includes(w));
+const iaLen=f=>String(f.length||'').includes(':')?String(f.length).split(':').reduce((s,v)=>s*60+ +v,0):parseFloat(f.length)||0;
+async function iaJson(u){const c=new AbortController(),tm=setTimeout(()=>c.abort(),7000);try{return await (await fetch(u,{signal:c.signal})).json()}finally{clearTimeout(tm)}}
+async function findArchive(r,t){
+  const q=`${r.artist} ${t.t}`;
+  let cache={};try{cache=JSON.parse(localStorage.getItem('vv-iacache'))||{}}catch(e){}
+  if(q in cache)return cache[q];
+  const a=iaWords(r.artist),w=iaWords(t.t),want=t.d?secs(t.d):0;
+  let hit=null;
+  if(a.length&&w.length){
+    const sur=[...a].sort((x,y)=>y.length-x.length)[0]; // самое длинное слово имени — обычно фамилия
+    const query=`${IA_LEGAL} AND title:(${w.join(' AND ')})`;
+    const d=await iaJson(`https://archive.org/advancedsearch.php?q=${encodeURIComponent(query)}&fl[]=identifier&fl[]=title&fl[]=creator&sort[]=downloads+desc&rows=15&output=json`);
+    // название записи должно начинаться с названия трека, а исполнитель — совпадать
+    const docs=(d.response?.docs||[]).filter(x=>iaWords(x.title).join(' ').startsWith(w.join(' ').slice(0,12)));
+    const hasA=x=>iaWords([].concat(x.creator||[]).join(' ')).includes(sur);
+    for(const x of [...docs.filter(hasA),...docs.filter(x=>!x.creator)].slice(0,4)){
+      const m=await iaJson(`https://archive.org/metadata/${x.identifier}`);
+      if(!hasA(x)&&!iaWords(JSON.stringify(m.metadata||{})).includes(sur))continue;
+      const f=(m.files||[]).filter(f=>/\.mp3$/i.test(f.name)&&!/_sample/i.test(f.name)).find(f=>!want||!iaLen(f)||Math.abs(iaLen(f)-want)<40);
+      if(f){hit={url:`https://archive.org/download/${x.identifier}/${encodeURIComponent(f.name)}`,page:`https://archive.org/details/${x.identifier}`,len:iaLen(f)};break}
+    }
+  }
+  cache[q]=hit;try{localStorage.setItem('vv-iacache',JSON.stringify(cache))}catch(e){}
+  return hit;
+}
 function ytApi(){
   if(ytReady)return ytReady;
   return ytReady=new Promise(res=>{window.onYouTubeIframeAPIReady=res;const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';document.head.appendChild(s)});
@@ -1292,8 +1324,16 @@ async function playTrack(){
   loading=true;wantPlay=true;stopAll();src=null;pos=0;dur=secs(t.d);playing=true;updateUI();
   $('#srcInfo').textContent='Ищу трек…';
   const key=getKey();
-  let id=null;
-  try{id=await findFree(r,t)}catch(e){}
+  // архив и YouTube ищем одновременно; если в архиве есть законная полная запись — играем её
+  const freeP=findFree(r,t).catch(()=>null);
+  let ia=null;try{ia=await findArchive(r,t)}catch(e){}
+  if(seq!==loadSeq)return;
+  if(ia){
+    src='archive';$('#ytwrap').style.display='none';audio.src=ia.url;dur=ia.len||dur;
+    try{await audio.play()}catch(e){if(seq!==loadSeq)return;loading=false;wantPlay=false;setPlaying(false);$('#srcInfo').textContent='Нажмите ▶, чтобы запустить звук';return}
+    if(seq!==loadSeq)return;loading=false;$('#srcInfo').textContent='📀 Полная запись · Internet Archive';prefetchNext();return;
+  }
+  let id=await freeP;
   if(!id&&key){try{id=await findYouTube(r,t,key)}catch(e){toast('YouTube: '+e.message.slice(0,60))}}
   if(seq!==loadSeq)return;
   if(id){src='yt';$('#srcInfo').textContent='Загружаю трек…';await playYT(id,seq);if(seq===loadSeq)prefetchNext();return}
@@ -1307,7 +1347,7 @@ async function playTrack(){
 }
 function load(r,i){current=r;queue=tracks(r);qi=i;playTrack();toast('▶ '+queue[qi].t)}
 // следующий трек ищем заранее: когда приложение свёрнуто, переход должен случиться без долгих поисков
-function prefetchNext(){const r=current,t=queue[qi+1];if(r&&t)findFree(r,t).catch(()=>{})}
+function prefetchNext(){const r=current,t=queue[qi+1];if(r&&t){findArchive(r,t).catch(()=>{});findFree(r,t).catch(()=>{})}}
 // свернули приложение: запоминаем момент, чтобы отличить паузу от YouTube от паузы, которую поставили вы
 let hiddenAt=0;document.addEventListener('visibilitychange',()=>{
   if(document.hidden){hiddenAt=Date.now();bgResumed=false;setTimeout(()=>{if(document.hidden&&wantPlay&&!bgResumed&&src==='yt'&&yt&&yt.getPlayerState&&yt.getPlayerState()===YT.PlayerState.PAUSED){bgResumed=true;yt.playVideo()}},1500)}
@@ -1315,8 +1355,8 @@ let hiddenAt=0;document.addEventListener('visibilitychange',()=>{
   else if(!loading&&src==='yt'&&yt&&yt.getPlayerState){const on=ytOk();if(on!==playing){wantPlay=on;setPlaying(on)}}
 });
 // фрагменты Apple Music: пауза от системы (звонок, наушники) тоже переключает кнопку
-audio.onplaying=()=>{if(src==='preview'){loading=false;wantPlay=true;setPlaying(true)}};
-audio.onpause=()=>{if(src==='preview'&&!loading&&!audio.ended){wantPlay=false;setPlaying(false)}};
+audio.onplaying=()=>{if(isAud()){loading=false;wantPlay=true;setPlaying(true)}};
+audio.onpause=()=>{if(isAud()&&!loading&&!audio.ended){wantPlay=false;setPlaying(false)}};
 // экран блокировки и шторка: название, обложка и кнопки ▶ ⏸ ⏮ ⏭
 function mediaMeta(){
   if(!('mediaSession' in navigator)||!current)return;
@@ -1331,15 +1371,15 @@ if('mediaSession' in navigator){
 }
 function next(){if(!current)return;if(qi<queue.length-1){qi++;playTrack()}else{wantPlay=false;stopAll();setPlaying(false)}}
 function prev(){if(!current)return;if(pos>3||qi===0){seek(0)}else{qi--;playTrack()}}
-function seek(s){if(src==='preview')audio.currentTime=s;else if(src==='yt'&&yt)yt.seekTo(s,true);pos=s;updateBar()}
+function seek(s){if(isAud())audio.currentTime=s;else if(src==='yt'&&yt)yt.seekTo(s,true);pos=s;updateBar()}
 function toggle(){
   if(!current)return;
   // пауза во время поиска трека: поиск отменяется, звук не включится сам через секунду
   if(loading){loadSeq++;loading=false;wantPlay=false;stopAll();src=null;setPlaying(false);$('#srcInfo').textContent='Пауза';return}
   if(!src){playTrack();return}
-  if(playing){wantPlay=false;setPlaying(false);if(src==='preview')audio.pause();else if(yt)yt.pauseVideo();return}
+  if(playing){wantPlay=false;setPlaying(false);if(isAud())audio.pause();else if(yt)yt.pauseVideo();return}
   wantPlay=true;setPlaying(true);
-  if(src==='preview')audio.play().catch(()=>{wantPlay=false;setPlaying(false)});
+  if(isAud())audio.play().catch(()=>{wantPlay=false;setPlaying(false)});
   else if(yt){yt.playVideo();
     // телефон может не дать запустить видео — тогда кнопка возвращается к ▶
     setTimeout(()=>{if(src==='yt'&&wantPlay&&!loading&&!ytOk()){wantPlay=false;setPlaying(false);$('#srcInfo').textContent='Нажмите ▶ в окне видео, чтобы запустить звук'}},3000)}
@@ -1968,7 +2008,7 @@ document.addEventListener('contextmenu',e=>{
 document.addEventListener('dragstart',e=>e.preventDefault());
 
 /* ---------- профиль ---------- */
-const VERSION='2026.11.26 · RU/EN';window.VV_VERSION=VERSION;
+const VERSION='2026.11.26b · RU/EN';window.VV_VERSION=VERSION;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const plural=(n,a,b,c)=>{if(lang==='en')return tr(n===1?a:c);const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c};
 const CUR={EUR:'€',USD:'$',RUB:'₽',ILS:'₪',GBP:'£'};
